@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#include "seastar/core/app-template.hh"
-#include "seastar/core/print.hh"
+#include "core/app-template.hh"
+#include "core/print.hh"
 
 int main(int ac, char** av) {
     seastar::app_template app;

@@ -1,7 +1,16 @@
 cmake_minimum_required (VERSION 3.1)
 project (ultramarine CXX)
 
+# Options
+option(ULTRAMARINE_BUILD_APPS "Include apps/ as part of the build" ON)
+
+# Dependencies
+set(SEASTAR_ENABLE_TESTS OFF CACHE BOOL "Not testing Seastar")
+set(SEASTAR_ENABLE_WERROR OFF CACHE BOOL "No error on warning")
+set(SEASTAR_USE_STD_OPTIONAL_VARIANT_STRINGVIEW ON CACHE BOOL "Use std over boost when possible")
 add_subdirectory (seastar)
 
-add_executable(main main.cpp)
-target_link_libraries(main Seastar::seastar)
+# Targets
+if (${ULTRAMARINE_BUILD_APPS})
+    add_subdirectory(apps)
+endif()

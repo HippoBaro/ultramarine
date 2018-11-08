@@ -1,0 +1,17 @@
+function(get_subdirectories path out)
+    file(GLOB children RELATIVE ${path} ${path}/*)
+    set(list "")
+    foreach (child ${children})
+        if (IS_DIRECTORY ${path}/${child})
+            LIST(APPEND list ${child})
+        endif ()
+    endforeach ()
+    set(${out} ${list} PARENT_SCOPE)
+endfunction()
+
+get_subdirectories(${CMAKE_CURRENT_SOURCE_DIR} subdirectories)
+
+foreach (dir ${subdirectories})
+    message(STATUS "Including app ${dir} in build")
+    add_subdirectory(${dir})
+endforeach()
