@@ -10,6 +10,11 @@ set(SEASTAR_ENABLE_WERROR OFF CACHE BOOL "No error on warning")
 set(SEASTAR_USE_STD_OPTIONAL_VARIANT_STRINGVIEW ON CACHE BOOL "Use std over boost when possible")
 add_subdirectory (seastar)
 
+# Ultramarine
+add_library(ultramarine src/dummy.cpp src/dummy.hpp)
+target_link_libraries(ultramarine PUBLIC Seastar::seastar)
+target_include_directories(ultramarine INTERFACE src)
+
 # Targets
 if (${ULTRAMARINE_BUILD_APPS})
     add_subdirectory(apps)
