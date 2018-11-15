@@ -24,4 +24,36 @@
 
 #pragma once
 
-void say_hello();
+#include "core/distributed.hh"
+#include "core/future.hh"
+
+#include "actor.hpp"
+
+namespace ultramarine {
+    template<typename Actor>
+    actor_ref<Actor> get_actor(actor_id id) {
+        return actor_ref<Actor>(id);
+    }
+
+    class silo {
+    public:
+        seastar::future<> stop() {
+            return seastar::make_ready_future();
+        }
+    };
+
+    class silo_server {
+    private:
+        std::unique_ptr<seastar::distributed<silo>> _service;
+    public:
+        silo_server() : _service(new seastar::distributed<silo>) { }
+
+        seastar::future<> start() {
+            return _service->start();
+        }
+
+        seastar::future<> stop() {
+            return _service->stop();
+        }
+    };
+}

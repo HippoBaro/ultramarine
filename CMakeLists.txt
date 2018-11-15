@@ -11,7 +11,10 @@ set(SEASTAR_USE_STD_OPTIONAL_VARIANT_STRINGVIEW ON CACHE BOOL "Use std over boos
 add_subdirectory (seastar)
 
 # Ultramarine
-add_library(ultramarine src/dummy.cpp src/dummy.hpp)
+add_library(ultramarine
+        src/actor.cpp src/actor.hpp
+        src/silo.cpp src/silo.hpp
+        )
 target_link_libraries(ultramarine PUBLIC Seastar::seastar)
 target_include_directories(ultramarine INTERFACE src)
 

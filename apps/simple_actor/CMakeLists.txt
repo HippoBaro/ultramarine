@@ -1,0 +1,2 @@
+add_executable(simple_actor main.cpp)
+target_link_libraries(simple_actor PRIVATE ultramarine)

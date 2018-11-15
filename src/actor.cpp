@@ -22,8 +22,3 @@
  * SOFTWARE.
  */
 
-#include "core/print.hh"
-
-void say_hello() {
-    seastar::print("Hello, World.\n");
-}
