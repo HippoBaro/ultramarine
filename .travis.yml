@@ -37,6 +37,7 @@ matrix:
         sources:
         - ubuntu-toolchain-r-test
         - sourceline: 'deb http://ppa.launchpad.net/scylladb/ppa/ubuntu trusty main'
+          key_url: 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6B2BFD3660EF3F5B'
         packages:
         - *seastar_deps
         - g++-7
@@ -55,6 +56,7 @@ matrix:
         - ubuntu-toolchain-r-test
         - llvm-toolchain-trusty-5.0
         - sourceline: 'deb http://ppa.launchpad.net/scylladb/ppa/ubuntu trusty main'
+          key_url: 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x6B2BFD3660EF3F5B'
         packages:
         - *seastar_deps
         - clang-5.0
