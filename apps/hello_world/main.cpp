@@ -23,13 +23,11 @@
  */
 
 #include "core/app-template.hh"
-#include "dummy.hpp"
 
 int main(int ac, char** av) {
     seastar::app_template app;
 
     return app.run(ac, av, [&] {
-        say_hello();
         return seastar::make_ready_future<int>(EXIT_SUCCESS);
     });
 }
