@@ -79,9 +79,11 @@ int main(int ac, char **av) {
                     });
                 });
             }).then([] {
-                auto ref = ultramarine::get_actor<simple_actor>(42);
-                return ref.lives_in().then([](auto cpu_id) {
-                    seastar::print("actor lives in shard %u\n", cpu_id);
+                auto ref = ultramarine::get_actor<simple_actor>(905);
+                return ref.say_hello().then([&] {
+                    return ref.lives_in().then([](auto cpu_id) {
+                        seastar::print("actor lives in shard %u\n", cpu_id);
+                    });
                 });
             });
         });

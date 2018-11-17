@@ -14,6 +14,7 @@ add_subdirectory (seastar)
 add_library(ultramarine
         src/actor.cpp src/actor.hpp
         src/silo.cpp src/silo.hpp
+        src/actor_ref.cpp src/actor_ref.hpp
         )
 target_link_libraries(ultramarine PUBLIC Seastar::seastar)
 target_include_directories(ultramarine INTERFACE src)

@@ -28,6 +28,7 @@
 #include "core/future.hh"
 
 #include "actor.hpp"
+#include "actor_ref.hpp"
 
 namespace ultramarine {
     template<typename Actor>

@@ -22,42 +22,4 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include <tuple>
-#include <memory>
-#include <unordered_map>
-#include <boost/core/noncopyable.hpp>
-#include <boost/hana.hpp>
-#include <boost/hana/string.hpp>
-
-#include <core/future.hh>
-
-namespace ultramarine {
-
-    using actor_id = unsigned int;
-    using actor_activation_id = unsigned int;
-
-    class actor : private boost::noncopyable {
-    public:
-
-        const actor_id id;
-
-        explicit actor(actor_id id) : id(id) { }
-    };
-
-    template <typename Actor>
-    struct actor_activation : private boost::noncopyable {
-        explicit actor_activation(actor_id id) : id(id), instance(id) {}
-
-        actor_activation_id id;
-        Actor instance;
-
-        Actor &operator->() {
-            return instance;
-        }
-    };
-
-    template <typename ActorKind>
-    using directory = std::unordered_map<actor_id, std::optional<actor_activation<ActorKind>>>;
-}
+#include "actor_ref.hpp"
