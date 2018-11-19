@@ -30,8 +30,8 @@
 #include "actor.hpp"
 
 namespace ultramarine {
-    template <typename Actor>
-    actor_activation<Actor> *hold_activation(actor_id id) {
+    template<typename Actor>
+    actor_activation <Actor> *hold_activation(actor_id id) {
         if (!Actor::directory) {
             Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
         }
@@ -49,27 +49,35 @@ namespace ultramarine {
         static constexpr auto table = Actor::ultramarine_handlers();
     };
 
-    template <typename Actor>
+    template<typename Actor>
     class collocated_actor_ref {
         seastar::shard_id loc;
 
     public:
         explicit collocated_actor_ref(seastar::shard_id loc) : loc(loc) {}
 
-        template <typename Handler>
+        template<typename Handler>
         auto schedule(actor_id id, Handler message) {
             seastar::print("Calling on collocated shard\n");
             return seastar::smp::submit_to(loc, [id, message] {
-                return vtable<Actor>::table[message](hold_activation<Actor>(id)->instance);
+                return (&(hold_activation<Actor>(id)->instance)->*vtable<Actor>::table[message])();
+            });
+        }
+
+        template<typename Handler, typename ...Args>
+        auto schedule(actor_id id, Handler message, Args &&... args) {
+            seastar::print("Calling on collocated shard with args\n");
+            return seastar::smp::submit_to(loc, [=] {
+                return (&(hold_activation<Actor>(id)->instance)->*vtable<Actor>::table[message])(args...);
             });
         }
     };
 
-    template <typename Actor>
+    template<typename Actor>
     class local_actor_ref {
-        actor_activation<Actor> * inst = nullptr;
+        actor_activation <Actor> *inst = nullptr;
 
-        actor_activation<Actor> *hold(actor_id id) {
+        actor_activation <Actor> *hold(actor_id id) {
             if (inst) [[likely]] {
                 return inst;
             }
@@ -79,44 +87,63 @@ namespace ultramarine {
 
     public:
 
-        template <typename Handler>
+        template<typename Handler>
         auto schedule(actor_id id, Handler message) {
             seastar::print("Calling on local shard\n");
-            return vtable<Actor>::table[message](hold(id)->instance);
+            return (&(hold(id)->instance)->*vtable<Actor>::table[message])();
+        }
+
+        template<typename Handler, typename ...Args>
+        auto schedule(actor_id id, Handler message, Args &&... args) {
+            seastar::print("Calling on local shard with args\n");
+            return (&(hold(id)->instance)->*vtable<Actor>::table[message])(args...);
         }
     };
 
-    template <typename Actor>
+    template<typename Actor>
     using actor_ref_impl = std::variant<local_actor_ref<Actor>, collocated_actor_ref<Actor>>;
 
     class actor_directory {
     public:
-        template <typename Actor>
+        template<typename Actor>
         static actor_ref_impl<Actor> locate(actor_id id) {
             auto shard = id % seastar::smp::count;
             if (shard == seastar::engine().cpu_id()) {
                 return local_actor_ref<Actor>{};
-            }
-            else {
+            } else {
                 return collocated_actor_ref<Actor>{shard};
             }
         }
     };
 
-    template <typename Actor>
+    template<typename Actor>
     struct actor_ref {
         actor_id ref;
         actor_ref_impl<Actor> impl;
 
         explicit actor_ref(actor_id a_id) : ref(a_id), impl(actor_directory::locate<Actor>(ref)) {}
-        actor_ref(actor_ref const&) = default;
+
+        actor_ref(actor_ref const &) = default;
+
         actor_ref(actor_ref &&) noexcept = default;
 
-        template <typename Handler>
+        template<typename Handler, typename ...Args>
+        auto tell(Handler message, Args &&... args) {
+            return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
+                return std::visit([this, message, args = std::move(args)](auto &&impl) {
+                    return std::apply([this, message, &impl](auto &&... args) {
+                        return impl.schedule(ref, message, args...);
+                    }, std::move(args));
+                }, impl);
+
+            }();
+        }
+
+        template<typename Handler>
         auto tell(Handler message) {
-            return std::visit([this, message](auto&& impl) {
+            return std::visit([this, message](auto &&impl) {
                 return impl.schedule(ref, message);
             }, impl);
-        }
+        };
     };
 }

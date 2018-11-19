@@ -38,8 +38,8 @@ public:
     static constexpr auto ultramarine_handlers() {
         using namespace ultramarine::literals;
         return boost::hana::make_map(
-                boost::hana::make_pair("method1"_ultra, [](simple_actor &self) { return self.method1(); }),
-                boost::hana::make_pair("method2"_ultra, [](simple_actor &self) { return self.method2(); })
+                boost::hana::make_pair("method1"_ultra, &simple_actor::method1),
+                boost::hana::make_pair("method2"_ultra, &simple_actor::method2)
         );
     }
 
@@ -48,8 +48,8 @@ public:
         return seastar::make_ready_future();
     }
 
-    seastar::future<> method2() {
-        seastar::print("Hello, method 2 in core %u\n", seastar::engine().cpu_id());
+    seastar::future<> method2(std::string_view arg1, int arg2) {
+        seastar::print("Hello, method 2 in core %u; Arg1 is %s, arg2 is %d\n", seastar::engine().cpu_id(), arg1, arg2);
         return seastar::make_ready_future();
     }
 
@@ -74,7 +74,7 @@ int main(int ac, char **av) {
             return seastar::do_with(std::move(ref), [](auto &ref) {
                 using namespace ultramarine::literals;
                 return ref.tell("method1"_ultra).then([&ref] {
-                    return ref.tell("method2"_ultra);
+                    return ref.tell("method2"_ultra, "toto", 1);
                 });
             });
         });
