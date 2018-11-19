@@ -30,7 +30,6 @@
 #include "actor.hpp"
 
 namespace ultramarine {
-
     template <typename Actor>
     actor_activation<Actor> *hold_activation(actor_id id) {
         if (!Actor::directory) {
@@ -99,28 +98,25 @@ namespace ultramarine {
         }
     };
 
+    template<typename Actor>
+    struct vtable {
+        static constexpr auto table = Actor::ultramarine_handlers();
+    };
+
     template <typename Actor>
-    class actor_ref {
+    struct actor_ref {
         actor_id ref;
         actor_ref_impl<Actor> impl;
 
-    public:
         explicit actor_ref(actor_id a_id) : ref(a_id), impl(actor_directory::locate<Actor>(ref)) {}
         actor_ref(actor_ref const&) = default;
         actor_ref(actor_ref &&) noexcept = default;
 
-        seastar::future<seastar::shard_id> lives_in() {
-            return std::visit([this](auto&& arg) {
-                return arg.schedule(ref, [] (auto &actor) {
-                    return seastar::make_ready_future<seastar::shard_id>(seastar::engine().cpu_id());
-                });
-            }, impl);
-        }
-
-        seastar::future<> say_hello() {
-            return std::visit([this](auto&& arg) {
-                return arg.schedule(ref, [] (auto &actor) {
-                    return actor.say_hello();
+        template <typename Handler>
+        auto tell(Handler message) {
+            return std::visit([this, message](auto&& arg) {
+                return arg.schedule(ref, [message] (auto &actor) {
+                    return vtable<Actor>::table[message](actor);
                 });
             }, impl);
         }

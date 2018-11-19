@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 3.1)
 project (ultramarine CXX)
+set (CMAKE_CXX_STANDARD 17)
 
 # Options
 option(ULTRAMARINE_BUILD_APPS "Include apps/ as part of the build" ON)
@@ -15,6 +16,7 @@ add_library(ultramarine
         src/actor.cpp src/actor.hpp
         src/silo.cpp src/silo.hpp
         src/actor_ref.cpp src/actor_ref.hpp
+        src/utility.hpp
         )
 target_link_libraries(ultramarine PUBLIC Seastar::seastar)
 target_include_directories(ultramarine INTERFACE src)
