@@ -30,7 +30,7 @@
 namespace ultramarine {
     template<typename CharT, CharT ...s>
     constexpr auto make_message() {
-        return boost::hana::hash(boost::hana::string_c<s...>);
+        return boost::hana::string_c<s...>;
     }
 
     namespace literals {

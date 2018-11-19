@@ -44,6 +44,11 @@ namespace ultramarine {
         return &(*r);
     }
 
+    template<typename Actor>
+    struct vtable {
+        static constexpr auto table = Actor::ultramarine_handlers();
+    };
+
     template <typename Actor>
     class collocated_actor_ref {
         seastar::shard_id loc;
@@ -51,11 +56,11 @@ namespace ultramarine {
     public:
         explicit collocated_actor_ref(seastar::shard_id loc) : loc(loc) {}
 
-        template <typename Callable>
-        auto schedule(actor_id id, Callable &&call) {
+        template <typename Handler>
+        auto schedule(actor_id id, Handler message) {
             seastar::print("Calling on collocated shard\n");
-            return seastar::smp::submit_to(loc, [call = std::move(call), id] {
-                return call(hold_activation<Actor>(id)->instance);
+            return seastar::smp::submit_to(loc, [id, message] {
+                return vtable<Actor>::table[message](hold_activation<Actor>(id)->instance);
             });
         }
     };
@@ -74,10 +79,10 @@ namespace ultramarine {
 
     public:
 
-        template <typename Callable>
-        auto schedule(actor_id id, Callable &&call) {
+        template <typename Handler>
+        auto schedule(actor_id id, Handler message) {
             seastar::print("Calling on local shard\n");
-            return call(hold(id)->instance);
+            return vtable<Actor>::table[message](hold(id)->instance);
         }
     };
 
@@ -98,11 +103,6 @@ namespace ultramarine {
         }
     };
 
-    template<typename Actor>
-    struct vtable {
-        static constexpr auto table = Actor::ultramarine_handlers();
-    };
-
     template <typename Actor>
     struct actor_ref {
         actor_id ref;
@@ -114,10 +114,8 @@ namespace ultramarine {
 
         template <typename Handler>
         auto tell(Handler message) {
-            return std::visit([this, message](auto&& arg) {
-                return arg.schedule(ref, [message] (auto &actor) {
-                    return vtable<Actor>::table[message](actor);
-                });
+            return std::visit([this, message](auto&& impl) {
+                return impl.schedule(ref, message);
             }, impl);
         }
     };
