@@ -46,7 +46,7 @@ namespace ultramarine {
 
     template<typename Actor>
     struct vtable {
-        static constexpr auto table = Actor::ultramarine_handlers();
+        static constexpr auto table = Actor::message::make_vtable();
     };
 
     template<typename Actor>

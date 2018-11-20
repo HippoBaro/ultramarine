@@ -37,10 +37,9 @@ namespace ultramarine {
     using actor_activation_id = unsigned int;
 
     class actor : private boost::noncopyable {
-    public:
-
         const actor_id id;
 
+    public:
         explicit actor(actor_id id) : id(id) { }
     };
 

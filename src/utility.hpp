@@ -28,15 +28,10 @@
 #include <boost/hana/string.hpp>
 
 namespace ultramarine {
-    template<typename CharT, CharT ...s>
-    constexpr auto make_message() {
-        return boost::hana::string_c<s...>;
-    }
-
     namespace literals {
         template<typename CharT, CharT ...s>
-        constexpr auto operator "" _ultra() {
-            return make_message<CharT, s...>();
+        constexpr auto operator"" _ultra() {
+            return boost::hana::string_c<s...>;
         }
     }
 }
