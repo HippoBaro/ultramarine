@@ -26,15 +26,8 @@
 
 #include "core/distributed.hh"
 #include "core/future.hh"
-#include "actor.hpp"
-#include "actor_ref.hpp"
 
 namespace ultramarine {
-    template<typename Actor>
-    actor_ref<Actor> get_actor(actor_id id) {
-        return actor_ref<Actor>(id);
-    }
-
     class silo {
     public:
         seastar::future<> stop() {

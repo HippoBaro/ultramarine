@@ -31,19 +31,6 @@
 
 namespace ultramarine {
     template<typename Actor>
-    actor_activation <Actor> *hold_activation(actor_id id) {
-        if (!Actor::directory) {
-            Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
-        }
-
-        auto &r = (*Actor::directory)[id];
-        if (!r) {
-            r.emplace(id);
-        }
-        return &(*r);
-    }
-
-    template<typename Actor>
     struct vtable {
         static constexpr auto table = Actor::message::make_vtable();
     };
@@ -141,4 +128,9 @@ namespace ultramarine {
             }, impl);
         };
     };
+
+    template<typename Actor>
+    actor_ref<Actor> get(actor_id id) {
+        return actor_ref<Actor>(id);
+    }
 }

@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <memory>
 #include <unordered_map>
 #include <boost/core/noncopyable.hpp>
 
@@ -53,4 +54,17 @@ namespace ultramarine {
 
     template <typename ActorKind>
     using directory = std::unordered_map<actor_id, std::optional<actor_activation<ActorKind>>>;
+
+    template<typename Actor>
+    actor_activation <Actor> *hold_activation(actor_id id) {
+        if (!Actor::directory) {
+            Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
+        }
+
+        auto &r = (*Actor::directory)[id];
+        if (!r) {
+            r.emplace(id);
+        }
+        return &(*r);
+    }
 }

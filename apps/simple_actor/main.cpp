@@ -25,6 +25,7 @@
 #include "core/app-template.hh"
 #include "silo.hpp"
 #include "actor.hpp"
+#include "actor_ref.hpp"
 #include "macro.hpp"
 
 class simple_actor : ultramarine::actor {
@@ -51,7 +52,7 @@ int main(int ac, char **av) {
                 });
             });
 
-            auto ref = ultramarine::get_actor<simple_actor>(0);
+            auto ref = ultramarine::get<simple_actor>(0);
             return seastar::do_with(std::move(ref), [](auto &ref) {
                 return ref.tell(simple_actor::message::say_hello());
             });
