@@ -30,6 +30,7 @@
 #include <boost/core/noncopyable.hpp>
 #include <core/future.hh>
 #include "utility.hpp"
+#include "macro.hpp"
 
 namespace ultramarine {
 

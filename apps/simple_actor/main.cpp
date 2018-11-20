@@ -23,15 +23,11 @@
  */
 
 #include <chrono>
-
 #include "core/app-template.hh"
 #include "silo.hpp"
 #include "actor.hpp"
 
 class simple_actor : ultramarine::actor {
-    using ultramarine::actor::actor;
-    int counter = 0;
-
     seastar::future<> method1() {
         seastar::print("Hello, method 1 in core %u\n", seastar::engine().cpu_id());
         return seastar::make_ready_future();
@@ -42,31 +38,14 @@ class simple_actor : ultramarine::actor {
         return seastar::make_ready_future();
     }
 
-    friend class ultramarine::actor_ref<simple_actor>;
-    friend class ultramarine::actor_activation<simple_actor>;
-
-public:
-    struct message {
-        static constexpr auto method1() { return BOOST_HANA_STRING("method1"); }
-        static constexpr auto method2() { return BOOST_HANA_STRING("method2"); }
-
-    private:
-        friend class ultramarine::vtable<simple_actor>;
-        static constexpr auto make_vtable() {
-            using namespace ultramarine::literals;
-            return boost::hana::make_map(
-                    boost::hana::make_pair(method1(), &simple_actor::method1),
-                    boost::hana::make_pair(method2(), &simple_actor::method2)
-            );
-        }
-    };
-    static thread_local std::unique_ptr<ultramarine::directory<simple_actor>> directory;
+    ULTRAMARINE_DEFINE_ACTOR(simple_actor, (method1)(method2));
 };
-
-thread_local std::unique_ptr<ultramarine::directory<simple_actor>> simple_actor::directory;
+ULTRAMARINE_IMPLEMENT_ACTOR(simple_actor);
 
 int main(int ac, char **av) {
     seastar::app_template app;
+
+    printf("simple_actor size: %zu\n", sizeof(simple_actor));
 
     return app.run(ac, av, [] {
         auto silo = new ultramarine::silo_server();
