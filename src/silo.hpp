@@ -26,7 +26,6 @@
 
 #include "core/distributed.hh"
 #include "core/future.hh"
-
 #include "actor.hpp"
 #include "actor_ref.hpp"
 

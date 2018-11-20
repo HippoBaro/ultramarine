@@ -24,13 +24,8 @@
 
 #pragma once
 
-#include <tuple>
-#include <memory>
 #include <unordered_map>
 #include <boost/core/noncopyable.hpp>
-#include <core/future.hh>
-#include "utility.hpp"
-#include "macro.hpp"
 
 namespace ultramarine {
 

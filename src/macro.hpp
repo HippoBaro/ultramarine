@@ -26,6 +26,7 @@
 
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/preprocessor/stringize.hpp>
+#include <boost/hana.hpp>
 
 #define ULTRAMARINE_MAKE_TAG(a, b, i, tag)                                                                  \
     static constexpr auto tag() { return BOOST_HANA_STRING(#tag); }                                         \
@@ -71,7 +72,6 @@ public:                                                                         
 private:                                                                                                    \
     friend class ultramarine::vtable<name>;                                                                 \
     static constexpr auto make_vtable() {                                                                   \
-      using namespace ultramarine::literals;                                                                \
       return boost::hana::make_map(                                                                         \
         BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                                          \
         boost::hana::make_pair(BOOST_HANA_STRING("dummy"), nullptr)                                         \

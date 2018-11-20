@@ -22,45 +22,38 @@
  * SOFTWARE.
  */
 
-#include <chrono>
 #include "core/app-template.hh"
 #include "silo.hpp"
 #include "actor.hpp"
+#include "macro.hpp"
 
 class simple_actor : ultramarine::actor {
-    seastar::future<> method1() {
-        seastar::print("Hello, method 1 in core %u\n", seastar::engine().cpu_id());
+    seastar::future<> say_hello() {
+        seastar::print("Hello, World; from simple_actor (%zu bytes) located on core %u.\n", sizeof(simple_actor),
+                       seastar::engine().cpu_id());
         return seastar::make_ready_future();
     }
 
-    seastar::future<> method2(std::string_view arg1, int arg2) {
-        seastar::print("Hello, method 2 in core %u; Arg1 is %s, arg2 is %d\n", seastar::engine().cpu_id(), arg1, arg2);
-        return seastar::make_ready_future();
-    }
-
-    ULTRAMARINE_DEFINE_ACTOR(simple_actor, (method1)(method2));
+    ULTRAMARINE_DEFINE_ACTOR(simple_actor, (say_hello));
 };
 ULTRAMARINE_IMPLEMENT_ACTOR(simple_actor);
 
 int main(int ac, char **av) {
     seastar::app_template app;
 
-    printf("simple_actor size: %zu\n", sizeof(simple_actor));
-
     return app.run(ac, av, [] {
         auto silo = new ultramarine::silo_server();
         return silo->start().then([silo] {
             seastar::engine().at_exit([silo] {
-                seastar::print("at exit\n");
-                return silo->stop();
+                return silo->stop().then([silo] {
+                    delete silo;
+                    return seastar::make_ready_future();
+                });
             });
 
             auto ref = ultramarine::get_actor<simple_actor>(0);
             return seastar::do_with(std::move(ref), [](auto &ref) {
-                using namespace ultramarine::literals;
-                return ref.tell(simple_actor::message::method1()).then([&ref] {
-                    return ref.tell(simple_actor::message::method2(), "toto", 1);
-                });
+                return ref.tell(simple_actor::message::say_hello());
             });
         });
     });

@@ -38,7 +38,6 @@ namespace ultramarine {
 
         auto &r = (*Actor::directory)[id];
         if (!r) {
-            seastar::print("Creating actor with id %u on core %u\n", id, seastar::engine().cpu_id());
             r.emplace(id);
         }
         return &(*r);
@@ -58,7 +57,6 @@ namespace ultramarine {
 
         template<typename Handler>
         auto schedule(actor_id id, Handler message) {
-            seastar::print("Calling on collocated shard\n");
             return seastar::smp::submit_to(loc, [id, message] {
                 return (&(hold_activation<Actor>(id)->instance)->*vtable<Actor>::table[message])();
             });
@@ -66,7 +64,6 @@ namespace ultramarine {
 
         template<typename Handler, typename ...Args>
         auto schedule(actor_id id, Handler message, Args &&... args) {
-            seastar::print("Calling on collocated shard with args\n");
             return seastar::smp::submit_to(loc, [=] {
                 return (&(hold_activation<Actor>(id)->instance)->*vtable<Actor>::table[message])(args...);
             });
@@ -89,13 +86,11 @@ namespace ultramarine {
 
         template<typename Handler>
         auto schedule(actor_id id, Handler message) {
-            seastar::print("Calling on local shard\n");
             return (&(hold(id)->instance)->*vtable<Actor>::table[message])();
         }
 
         template<typename Handler, typename ...Args>
         auto schedule(actor_id id, Handler message, Args &&... args) {
-            seastar::print("Calling on local shard with args\n");
             return (&(hold(id)->instance)->*vtable<Actor>::table[message])(args...);
         }
     };
