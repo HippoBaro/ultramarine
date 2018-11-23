@@ -117,7 +117,7 @@ auto local_actor_int() {
     auto counterActor = ultramarine::get<counter_actor>(0);
     return seastar::do_until([counter] {
         return *counter >= 10000;
-    }, [counterActor, counter]() mutable {
+    }, [counterActor, counter]() {
         ++*counter;
         return counterActor.tell(counter_actor::message::get_counter()).discard_result();
     });
@@ -153,7 +153,7 @@ auto collocated_actor_int() {
     auto counterActor = ultramarine::get<counter_actor>(1);
     return seastar::do_until([counter] {
         return *counter >= 10000;
-    }, [counterActor, counter]() mutable {
+    }, [counterActor, counter]() {
         ++*counter;
         return counterActor.tell(counter_actor::message::get_counter()).discard_result();
     });

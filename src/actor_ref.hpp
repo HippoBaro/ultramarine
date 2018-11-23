@@ -43,14 +43,14 @@ namespace ultramarine {
         explicit collocated_actor_ref(seastar::shard_id loc) : loc(loc) {}
 
         template<typename Handler>
-        auto schedule(actor_id id, Handler message) {
+        auto schedule(actor_id id, Handler message) const {
             return seastar::smp::submit_to(loc, [id, message] {
                 return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])();
             });
         }
 
         template<typename Handler, typename ...Args>
-        auto schedule(actor_id id, Handler message, Args &&... args) {
+        auto schedule(actor_id id, Handler message, Args &&... args) const {
             return seastar::smp::submit_to(loc, [=] {
                 return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])(args...);
             });
@@ -65,12 +65,12 @@ namespace ultramarine {
         explicit local_actor_ref(actor_id id) : inst(hold_activation<Actor>(id)) {};
 
         template<typename Handler>
-        auto schedule(actor_id id, Handler message) {
+        auto schedule(actor_id id, Handler message) const {
             return (inst->*vtable<Actor>::table[message])();
         }
 
         template<typename Handler, typename ...Args>
-        auto schedule(actor_id id, Handler message, Args &&... args) {
+        auto schedule(actor_id id, Handler message, Args &&... args) const {
             return (inst->*vtable<Actor>::table[message])(args...);
         }
     };
@@ -103,7 +103,7 @@ namespace ultramarine {
         actor_ref(actor_ref &&) noexcept = default;
 
         template<typename Handler, typename ...Args>
-        auto inline tell(Handler message, Args &&... args) {
+        auto inline tell(Handler message, Args &&... args) const {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
                 return std::visit([this, message, args = std::move(args)](auto &&impl) {
                     return std::apply([this, message, &impl](auto &&... args) {
@@ -123,7 +123,7 @@ namespace ultramarine {
         }
 
         template<typename Handler>
-        auto inline tell(Handler message) ->
+        auto inline tell(Handler message) const ->
         seastar::futurize_t<std::result_of_t<decltype(vtable<Actor>::table[message])(Actor *)>> {
             return std::visit([this, message](auto &&impl) {
                 using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor *)>;
