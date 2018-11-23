@@ -38,46 +38,52 @@ namespace ultramarine::benchmark {
     template<typename Pair>
     auto run_one(Pair &&bench) {
         int *counter = new int(0);
-        return seastar::do_with(std::move(bench), std::vector<std::chrono::microseconds::rep>(), [counter](auto &bench, auto &vec) {
-            return seastar::do_until([counter] {
-                return *counter > 20;
-            }, [counter, &bench, &vec] {
-                ++*counter;
-                using namespace std::chrono;
-                auto start = high_resolution_clock::now();
-                return std::get<1>(bench)().then([start] {
-                    auto stop = high_resolution_clock::now();
-                    auto duration = duration_cast<microseconds>(stop - start);
-                    return duration.count();
-                }).then([&vec](auto duration) {
-                    vec.emplace_back(duration);
-                });
-            }).then([&vec, &bench] {
-                auto sum = std::accumulate(std::begin(vec), std::end(vec), 0);
-                seastar::print("%s: %lu us\n", std::get<0>(bench), sum / vec.size());
-            });
-        });
+        return seastar::do_with(std::move(bench),
+                                std::vector<std::chrono::microseconds::rep>(),
+                                [counter](auto &bench, auto &vec) {
+                                    return seastar::do_until([counter] {
+                                        return *counter > 500;
+                                    }, [counter, &bench, &vec] {
+                                        ++*counter;
+                                        using namespace std::chrono;
+                                        auto start = high_resolution_clock::now();
+                                        return std::get<1>(bench)().then([start, &vec] {
+                                            auto stop = high_resolution_clock::now();
+                                            vec.emplace_back(duration_cast<microseconds>(stop - start).count());
+                                            return seastar::make_ready_future();
+                                        });
+                                    }).then([&vec, &bench] {
+                                        auto sum = std::accumulate(std::begin(vec), std::end(vec), 0);
+                                        std::sort(std::begin(vec), std::end(vec));
+                                        seastar::print("%s: %lu us (min: %lu us -- 99p: %lu us)\n", std::get<0>(bench),
+                                                       sum / vec.size(), *std::begin(vec),
+                                                       *(std::end(vec) - 10));
+                                    });
+                                });
     }
 
     int run(int ac, char **av, benchmark_list &&benchs) {
         seastar::app_template app;
 
         return app.run(ac, av, [benchs = std::move(benchs)] {
-            return seastar::do_with(std::move(benchs), std::vector<std::chrono::microseconds::rep>(), [](auto &benchs, auto &vec) {
-                auto silo = new ultramarine::silo_server();
-                return silo->start().then([silo, &benchs] {
-                    seastar::engine().at_exit([silo] {
-                        return silo->stop().then([silo] {
-                            delete silo;
-                            return seastar::make_ready_future();
-                        });
-                    });
+            return seastar::do_with(std::move(benchs),
+                                    std::vector<std::chrono::microseconds::rep>(),
+                                    [](auto &benchs, auto &vec) {
+                                        auto silo = new ultramarine::silo_server();
+                                        return silo->start().then([silo, &benchs] {
+                                            seastar::engine().at_exit([silo] {
+                                                return silo->stop().then([silo] {
+                                                    delete silo;
+                                                    return seastar::make_ready_future();
+                                                });
+                                            });
 
-                    return seastar::do_for_each(benchs, [](auto &bench) {
-                        return run_one(bench);
-                    });
-                });
-            });
+                                            seastar::print("Benchmarking\n");
+                                            return seastar::do_for_each(benchs, [](auto &bench) {
+                                                return run_one(bench);
+                                            });
+                                        });
+                                    });
         });
     }
 }
