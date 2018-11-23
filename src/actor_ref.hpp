@@ -128,7 +128,12 @@ namespace ultramarine {
             return std::visit([this, message](auto &&impl) {
                 using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor *)>;
                 if constexpr (!seastar::is_future<ret_type>::value) {
-                    return seastar::futurize<ret_type>::apply([&impl, message, this] { impl.schedule(ref, message);});
+                    if constexpr (std::is_void<ret_type>::value) {
+                        return seastar::futurize<ret_type>::apply([&impl, message, this] { impl.schedule(ref, message);});
+                    }
+                    else {
+                        return seastar::futurize<ret_type>::apply([&impl, message, this] { return impl.schedule(ref, message);});
+                    }
                 }
                 else {
                     return impl.schedule(ref, message);
