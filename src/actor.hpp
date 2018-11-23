@@ -40,23 +40,11 @@ namespace ultramarine {
         explicit actor(actor_id id) : id(id) { }
     };
 
-    template <typename Actor>
-    struct actor_activation : private boost::noncopyable {
-        explicit actor_activation(actor_id id) : id(id), instance(id) {}
-
-        actor_activation_id id;
-        Actor instance;
-
-        Actor &operator->() {
-            return instance;
-        }
-    };
-
     template <typename ActorKind>
-    using directory = std::unordered_map<actor_id, std::optional<actor_activation<ActorKind>>>;
+    using directory = std::unordered_map<actor_id, std::optional<ActorKind>>;
 
     template<typename Actor>
-    actor_activation <Actor> *hold_activation(actor_id id) {
+    Actor *hold_activation(actor_id id) {
         if (!Actor::directory) {
             Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
         }

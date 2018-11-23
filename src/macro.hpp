@@ -65,7 +65,6 @@ private:
 #define ULTRAMARINE_DEFINE_ACTOR(name, seq)                                                                 \
       using ultramarine::actor::actor;                                                                      \
       friend class ultramarine::actor_ref<name>;                                                            \
-      friend class ultramarine::actor_activation<name>;                                                     \
 public:                                                                                                     \
       struct message {                                                                                      \
           BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG, name, seq)                                          \

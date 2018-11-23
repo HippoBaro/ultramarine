@@ -45,40 +45,33 @@ namespace ultramarine {
         template<typename Handler>
         auto schedule(actor_id id, Handler message) {
             return seastar::smp::submit_to(loc, [id, message] {
-                return (&(hold_activation<Actor>(id)->instance)->*vtable<Actor>::table[message])();
+                return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])();
             });
         }
 
         template<typename Handler, typename ...Args>
         auto schedule(actor_id id, Handler message, Args &&... args) {
             return seastar::smp::submit_to(loc, [=] {
-                return (&(hold_activation<Actor>(id)->instance)->*vtable<Actor>::table[message])(args...);
+                return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])(args...);
             });
         }
     };
 
     template<typename Actor>
     class local_actor_ref {
-        actor_activation <Actor> *inst = nullptr;
-
-        actor_activation <Actor> *hold(actor_id id) {
-            if (inst) [[likely]] {
-                return inst;
-            }
-
-            return inst = hold_activation<Actor>(id);
-        }
+        Actor *inst = nullptr;
 
     public:
+        explicit local_actor_ref(actor_id id) : inst(hold_activation<Actor>(id)) {};
 
         template<typename Handler>
         auto schedule(actor_id id, Handler message) {
-            return (&(hold(id)->instance)->*vtable<Actor>::table[message])();
+            return (inst->*vtable<Actor>::table[message])();
         }
 
         template<typename Handler, typename ...Args>
         auto schedule(actor_id id, Handler message, Args &&... args) {
-            return (&(hold(id)->instance)->*vtable<Actor>::table[message])(args...);
+            return (inst->*vtable<Actor>::table[message])(args...);
         }
     };
 
@@ -91,7 +84,7 @@ namespace ultramarine {
         static actor_ref_impl<Actor> locate(actor_id id) {
             auto shard = id % seastar::smp::count;
             if (shard == seastar::engine().cpu_id()) {
-                return local_actor_ref<Actor>{};
+                return local_actor_ref<Actor>(id);
             } else {
                 return collocated_actor_ref<Actor>{shard};
             }
