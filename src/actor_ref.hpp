@@ -103,11 +103,19 @@ namespace ultramarine {
         actor_ref(actor_ref &&) noexcept = default;
 
         template<typename Handler, typename ...Args>
-        auto tell(Handler message, Args &&... args) {
+        auto inline tell(Handler message, Args &&... args) {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
                 return std::visit([this, message, args = std::move(args)](auto &&impl) {
                     return std::apply([this, message, &impl](auto &&... args) {
-                        return impl.schedule(ref, message, args...);
+                        using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor *)>;
+                        if constexpr (!seastar::is_future<ret_type>::value) {
+                            return seastar::futurize<ret_type>::apply([&impl, message, this, &args...] {
+                                impl.schedule(ref, message, args...);
+                            });
+                        }
+                        else {
+                            return impl.schedule(ref, message, args...);
+                        }
                     }, std::move(args));
                 }, impl);
 
@@ -115,9 +123,16 @@ namespace ultramarine {
         }
 
         template<typename Handler>
-        auto tell(Handler message) {
+        auto inline tell(Handler message) ->
+        seastar::futurize_t<std::result_of_t<decltype(vtable<Actor>::table[message])(Actor *)>> {
             return std::visit([this, message](auto &&impl) {
-                return impl.schedule(ref, message);
+                using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor *)>;
+                if constexpr (!seastar::is_future<ret_type>::value) {
+                    return seastar::futurize<ret_type>::apply([&impl, message, this] { impl.schedule(ref, message);});
+                }
+                else {
+                    return impl.schedule(ref, message);
+                }
             }, impl);
         };
     };
