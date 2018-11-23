@@ -40,16 +40,24 @@ public:
         counter++;
     }
 
-    seastar::future<int> get_counter() const {
+    seastar::future<int> get_counter_future() const {
         return seastar::make_ready_future<int>(counter);
     }
 
-    ULTRAMARINE_DEFINE_ACTOR(counter_actor, (increase_counter_future)(increase_counter_void)(get_counter));
+    int get_counter_int() const {
+        return counter;
+    }
+
+    ULTRAMARINE_DEFINE_ACTOR(counter_actor,
+                             (increase_counter_future)
+                             (increase_counter_void)
+                             (get_counter_future)
+                             (get_counter_int));
 };
 
 ULTRAMARINE_IMPLEMENT_ACTOR(counter_actor);
 
-auto plain_object_future() {
+auto plain_object_void_future() {
     int *counter = new int(0);
 
     auto counterActor = new counter_actor(0);
@@ -74,6 +82,18 @@ auto plain_object_void() {
     });
 }
 
+auto plain_object_int_future() {
+    int *counter = new int(0);
+
+    auto counterActor = new counter_actor(0);
+    return seastar::do_until([counterActor, counter] {
+        return *counter >= 10000;
+    }, [counterActor, counter] {
+        ++*counter;
+        return counterActor->get_counter_future().discard_result();
+    });
+}
+
 auto plain_object_int() {
     int *counter = new int(0);
 
@@ -82,12 +102,12 @@ auto plain_object_int() {
         return *counter >= 10000;
     }, [counterActor, counter] {
         ++*counter;
-        auto volatile test = counterActor->get_counter();
+        counterActor->get_counter_int();
         return seastar::make_ready_future();
     });
 }
 
-auto local_actor_future() {
+auto local_actor_void_future() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(0);
@@ -111,6 +131,18 @@ auto local_actor_void() {
     });
 }
 
+auto local_actor_int_future() {
+    int *counter = new int(0);
+
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    return seastar::do_until([counter] {
+        return *counter >= 10000;
+    }, [counterActor, counter]() {
+        ++*counter;
+        return counterActor.tell(counter_actor::message::get_counter_future()).discard_result();
+    });
+}
+
 auto local_actor_int() {
     int *counter = new int(0);
 
@@ -119,11 +151,11 @@ auto local_actor_int() {
         return *counter >= 10000;
     }, [counterActor, counter]() {
         ++*counter;
-        return counterActor.tell(counter_actor::message::get_counter()).discard_result();
+        return counterActor.tell(counter_actor::message::get_counter_int()).discard_result();
     });
 }
 
-auto collocated_actor_future() {
+auto collocated_actor_void_future() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(1);
@@ -147,6 +179,18 @@ auto collocated_actor_void() {
     });
 }
 
+auto collocated_actor_int_future() {
+    int *counter = new int(0);
+
+    auto counterActor = ultramarine::get<counter_actor>(1);
+    return seastar::do_until([counter] {
+        return *counter >= 10000;
+    }, [counterActor, counter]() {
+        ++*counter;
+        return counterActor.tell(counter_actor::message::get_counter_future()).discard_result();
+    });
+}
+
 auto collocated_actor_int() {
     int *counter = new int(0);
 
@@ -155,19 +199,22 @@ auto collocated_actor_int() {
         return *counter >= 10000;
     }, [counterActor, counter]() {
         ++*counter;
-        return counterActor.tell(counter_actor::message::get_counter()).discard_result();
+        return counterActor.tell(counter_actor::message::get_counter_int()).discard_result();
     });
 }
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
-            ULTRAMARINE_BENCH(plain_object_future),
-            ULTRAMARINE_BENCH(local_actor_future),
-            ULTRAMARINE_BENCH(local_actor_int),
+            ULTRAMARINE_BENCH(plain_object_void_future),
+            ULTRAMARINE_BENCH(local_actor_void_future),
+            ULTRAMARINE_BENCH(collocated_actor_void_future),
             ULTRAMARINE_BENCH(plain_object_void),
             ULTRAMARINE_BENCH(local_actor_void),
-            ULTRAMARINE_BENCH(local_actor_int),
-            ULTRAMARINE_BENCH(collocated_actor_future),
             ULTRAMARINE_BENCH(collocated_actor_void),
+            ULTRAMARINE_BENCH(plain_object_int_future),
+            ULTRAMARINE_BENCH(local_actor_int_future),
+            ULTRAMARINE_BENCH(collocated_actor_int_future),
+            ULTRAMARINE_BENCH(plain_object_int),
+            ULTRAMARINE_BENCH(local_actor_int),
             ULTRAMARINE_BENCH(collocated_actor_int)});
 }

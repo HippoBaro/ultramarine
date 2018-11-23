@@ -53,10 +53,10 @@ namespace ultramarine::benchmark {
                                             return seastar::make_ready_future();
                                         });
                                     }).then([&vec, &bench] {
-                                        auto sum = std::accumulate(std::begin(vec), std::end(vec), 0);
                                         std::sort(std::begin(vec), std::end(vec));
+                                        auto sum = std::accumulate(std::begin(vec), std::end(vec), 0);
                                         seastar::print("%s: %lu us (min: %lu us -- 99p: %lu us)\n", std::get<0>(bench),
-                                                       sum / vec.size(), *std::begin(vec),
+                                                       sum / (vec.size()), *std::begin(vec),
                                                        *(std::end(vec) - 10));
                                     });
                                 });
@@ -77,8 +77,6 @@ namespace ultramarine::benchmark {
                                                     return seastar::make_ready_future();
                                                 });
                                             });
-
-                                            seastar::print("Benchmarking\n");
                                             return seastar::do_for_each(benchs, [](auto &bench) {
                                                 return run_one(bench);
                                             });
