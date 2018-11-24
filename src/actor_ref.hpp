@@ -103,55 +103,44 @@ namespace ultramarine {
         actor_ref(actor_ref &&) noexcept = default;
 
         template<typename Handler, typename ...Args>
-        auto inline tell(Handler message, Args &&... args) const -> auto {
+        auto inline tell(Handler message, Args &&... args) const {
             using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor, Args ...)>;
 
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
                 return std::visit([this, message, args = std::move(args)](auto &impl) {
-
-                        if constexpr (!seastar::is_future<ret_type>::value) {
-                            return seastar::futurize<ret_type>::apply([&impl, message, &args, this] {
-                                if constexpr (std::is_void<ret_type>::value) {
-                                    return seastar::futurize<ret_type>::apply([&impl, message, &args, this] {
-                                        return std::apply([this, message, &impl](auto &&... args) {
-                                            impl.schedule(ref, message, args...);
-                                        }, std::move(args));
-                                    });
-                                }
-                                else {
-                                    return seastar::futurize<ret_type>::apply([&impl, message, &args, this] {
-                                        return std::apply([this, message, &impl](auto &&... args) {
-                                            return impl.schedule(ref, message, args...);
-                                        }, std::move(args));
-                                    });
-                                }
-                            });
-                        }
-                        else {
+                    if constexpr (std::is_void<ret_type>::value) {
+                        return std::apply([this, message, &impl](auto &&... args) {
+                            impl.schedule(ref, message, args...);
+                        }, std::move(args));
+                    } else if constexpr (!seastar::is_future<ret_type>::value) {
+                        return seastar::futurize<ret_type>::apply([this, &impl, message, &args] {
                             return std::apply([this, message, &impl](auto &&... args) {
                                 return impl.schedule(ref, message, args...);
                             }, std::move(args));
-                        }
-
+                        });
+                    } else {
+                        return std::apply([this, message, &impl](auto &&... args) {
+                            return impl.schedule(ref, message, args...);
+                        }, std::move(args));
+                    }
                 }, impl);
             }();
         }
 
         template<typename Handler>
-        auto inline tell(Handler message) const ->
-        seastar::futurize_t<std::result_of_t<decltype(vtable<Actor>::table[message])(Actor)>> {
+        auto inline tell(Handler message) const {
             using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor)>;
 
             return std::visit([this, message](auto &impl) {
-                if constexpr (!seastar::is_future<ret_type>::value) {
-                    if constexpr (std::is_void<ret_type>::value) {
-                        return seastar::futurize<ret_type>::apply([&impl, message, this] { impl.schedule(ref, message);});
-                    }
-                    else {
-                        return seastar::futurize<ret_type>::apply([&impl, message, this] { return impl.schedule(ref, message);});
-                    }
-                }
-                else {
+                if constexpr (std::is_void<ret_type>::value) {
+                    return seastar::futurize<ret_type>::apply([&impl, message, this] {
+                        impl.schedule(ref, message);
+                    });
+                } else if constexpr (!seastar::is_future<ret_type>::value) {
+                    return seastar::futurize<ret_type>::apply([&impl, message, this] {
+                        return impl.schedule(ref, message);
+                    });
+                } else {
                     return impl.schedule(ref, message);
                 }
             }, impl);
