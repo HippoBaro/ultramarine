@@ -48,11 +48,18 @@ public:
         return counter;
     }
 
+    seastar::future<int> accumulate_future(std::vector<int> pack) const {
+        return seastar::make_ready_future<int>(std::accumulate(std::begin(pack), std::end(pack), 0));
+    }
+
+    int accumulate_value(std::vector<int> pack) const {
+        return std::accumulate(std::begin(pack), std::end(pack), 0);
+    }
+
     ULTRAMARINE_DEFINE_ACTOR(counter_actor,
-                             (increase_counter_future)
-                             (increase_counter_void)
-                             (get_counter_future)
-                             (get_counter_int));
+                             (increase_counter_future)(increase_counter_void)
+                             (get_counter_future)(get_counter_int)
+                             (accumulate_future)(accumulate_value));
 };
 
 ULTRAMARINE_IMPLEMENT_ACTOR(counter_actor);
@@ -107,6 +114,31 @@ auto plain_object_int() {
     });
 }
 
+auto plain_object_future_args() {
+    int *counter = new int(0);
+
+    auto counterActor = new counter_actor(0);
+    return seastar::do_until([counterActor, counter] {
+        return *counter >= 10000;
+    }, [counterActor, counter] {
+        ++*counter;
+        return counterActor->accumulate_future({10, 12, 30, *counter}).discard_result();
+    });
+}
+
+auto plain_object_int_args() {
+    int *counter = new int(0);
+
+    auto counterActor = new counter_actor(0);
+    return seastar::do_until([counterActor, counter] {
+        return *counter >= 10000;
+    }, [counterActor, counter] {
+        ++*counter;
+        counterActor->accumulate_value(std::vector<int>{10, 12, 30, *counter});
+        return seastar::make_ready_future();
+    });
+}
+
 auto local_actor_void_future() {
     int *counter = new int(0);
 
@@ -152,6 +184,30 @@ auto local_actor_int() {
     }, [counterActor, counter]() {
         ++*counter;
         return counterActor.tell(counter_actor::message::get_counter_int()).discard_result();
+    });
+}
+
+auto local_actor_future_args() {
+    int *counter = new int(0);
+
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    return seastar::do_until([counter] {
+        return *counter >= 10000;
+    }, [counterActor, counter]() {
+        ++*counter;
+        return counterActor.tell(counter_actor::message::accumulate_future(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+    });
+}
+
+auto local_actor_int_args() {
+    int *counter = new int(0);
+
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    return seastar::do_until([counter] {
+        return *counter >= 10000;
+    }, [counterActor, counter]() {
+        ++*counter;
+        return counterActor.tell(counter_actor::message::accumulate_value(), std::vector<int>{10, 12, 30, *counter}).discard_result();
     });
 }
 
@@ -203,6 +259,30 @@ auto collocated_actor_int() {
     });
 }
 
+auto collocated_actor_future_args() {
+    int *counter = new int(0);
+
+    auto counterActor = ultramarine::get<counter_actor>(1);
+    return seastar::do_until([counter] {
+        return *counter >= 10000;
+    }, [counterActor, counter]() {
+        ++*counter;
+        return counterActor.tell(counter_actor::message::accumulate_future(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+    });
+}
+
+auto collocated_actor_int_args() {
+    int *counter = new int(0);
+
+    auto counterActor = ultramarine::get<counter_actor>(1);
+    return seastar::do_until([counter] {
+        return *counter >= 10000;
+    }, [counterActor, counter]() {
+        ++*counter;
+        return counterActor.tell(counter_actor::message::accumulate_value(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+    });
+}
+
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(plain_object_void_future),
@@ -216,5 +296,12 @@ int main(int ac, char **av) {
             ULTRAMARINE_BENCH(collocated_actor_int_future),
             ULTRAMARINE_BENCH(plain_object_int),
             ULTRAMARINE_BENCH(local_actor_int),
-            ULTRAMARINE_BENCH(collocated_actor_int)});
+            ULTRAMARINE_BENCH(collocated_actor_int),
+            ULTRAMARINE_BENCH(plain_object_future_args),
+            ULTRAMARINE_BENCH(local_actor_future_args),
+            ULTRAMARINE_BENCH(collocated_actor_future_args),
+            ULTRAMARINE_BENCH(plain_object_int_args),
+            ULTRAMARINE_BENCH(local_actor_int_args),
+            ULTRAMARINE_BENCH(collocated_actor_int_args)
+    });
 }
