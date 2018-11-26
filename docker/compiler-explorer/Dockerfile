@@ -29,8 +29,11 @@ RUN git clone "https://github.com/scylladb/seastar.git" -b seastar-18.08-branch 
 
 COPY c++.local.properties /compiler-explorer/etc/config/c++.local.properties
 COPY compiler-explorer.local.properties /compiler-explorer/etc/config/compiler-explorer.local.properties
+COPY start-ce.sh /start-ce.sh
+
+RUN chmod +x start-ce.sh
 
 RUN cd /compiler-explorer && make prereqs
 
 EXPOSE 10240/tcp
-ENTRYPOINT ["make", "-C", "/compiler-explorer", "run"]
+ENTRYPOINT ["sh", "-c", "/start-ce.sh"]
