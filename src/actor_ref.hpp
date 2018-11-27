@@ -175,6 +175,8 @@ namespace ultramarine {
         actor_ref_variant<Actor> impl;
 
         explicit actor_ref(actor_id id) : impl(actor_directory::locate<Actor>(id)) {}
+        explicit actor_ref(local_actor_ref<Actor> &ref) : impl(ref) {};
+        explicit actor_ref(collocated_actor_ref<Actor> &ref) : impl(ref) {};
 
         actor_ref(actor_ref const &) = default;
 
