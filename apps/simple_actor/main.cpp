@@ -52,10 +52,7 @@ int main(int ac, char **av) {
                 });
             });
 
-            auto ref = ultramarine::get<simple_actor>(0);
-            return seastar::do_with(std::move(ref), [](auto &ref) {
-                return ref.tell(simple_actor::message::say_hello());
-            });
+            return ultramarine::get<simple_actor>(0).tell(simple_actor::message::say_hello());
         });
     });
 }
