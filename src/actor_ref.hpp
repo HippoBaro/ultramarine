@@ -47,17 +47,17 @@ namespace ultramarine {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
                 if constexpr (std::is_void<ret_type>::value) {
                     return std::apply([this, message](auto &&... args) {
-                        static_cast<Impl const*>(this)->schedule(ref, message, args...);
+                        static_cast<Impl const *>(this)->schedule(ref, message, args...);
                     }, std::move(args));
                 } else if constexpr (!seastar::is_future<ret_type>::value) {
                     return seastar::futurize<ret_type>::apply([this, message, &args] {
                         return std::apply([this, message](auto &&... args) {
-                            return static_cast<Impl const*>(this)->schedule(ref, message, args...);
+                            return static_cast<Impl const *>(this)->schedule(ref, message, args...);
                         }, std::move(args));
                     });
                 } else {
                     return std::apply([this, message](auto &&... args) {
-                        return static_cast<Impl const*>(this)->schedule(ref, message, args...);
+                        return static_cast<Impl const *>(this)->schedule(ref, message, args...);
                     }, std::move(args));
                 }
             }();
@@ -69,14 +69,14 @@ namespace ultramarine {
 
             if constexpr (std::is_void<ret_type>::value) {
                 return seastar::futurize<ret_type>::apply([this, message] {
-                    static_cast<Impl const*>(this)->schedule(ref, message);
+                    static_cast<Impl const *>(this)->schedule(ref, message);
                 });
             } else if constexpr (!seastar::is_future<ret_type>::value) {
                 return seastar::futurize<ret_type>::apply([this, message] {
-                    return static_cast<Impl const*>(this)->schedule(ref, message);
+                    return static_cast<Impl const *>(this)->schedule(ref, message);
                 });
             } else {
-                return static_cast<Impl const*>(this)->schedule(ref, message);
+                return static_cast<Impl const *>(this)->schedule(ref, message);
             }
         };
     };
@@ -175,7 +175,9 @@ namespace ultramarine {
         actor_ref_variant<Actor> impl;
 
         explicit actor_ref(actor_id id) : impl(actor_directory::locate<Actor>(id)) {}
+
         explicit actor_ref(local_actor_ref<Actor> &ref) : impl(ref) {};
+
         explicit actor_ref(collocated_actor_ref<Actor> &ref) : impl(ref) {};
 
         actor_ref(actor_ref const &) = default;
@@ -188,6 +190,24 @@ namespace ultramarine {
                 return func(impl);
             }, impl);
         }
+
+        template<typename Handler, typename ...Args>
+        auto inline tell(Handler message, Args &&... args) const {
+            return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
+                return visit([message, args = std::move(args)](auto &&impl) {
+                    return std::apply([&impl, message](auto &&... args) {
+                        return impl.tell(message);
+                    }, std::move(args));
+                });
+            }();
+        }
+
+        template<typename Handler>
+        auto inline tell(Handler message) const {
+            return visit([message](auto &&impl) {
+                return impl.tell(message);
+            });
+        };
     };
 
     template<typename Actor>
