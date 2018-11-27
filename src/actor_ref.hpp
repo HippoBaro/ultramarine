@@ -183,7 +183,7 @@ namespace ultramarine {
         actor_ref(actor_ref &&) noexcept = default;
 
         template<typename Func>
-        auto visit(Func &&func) {
+        auto visit(Func &&func) const {
             return std::visit([func = std::move(func)](auto &impl) {
                 return func(impl);
             }, impl);
