@@ -143,23 +143,28 @@ auto local_actor_void_future() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(0);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() mutable {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::increase_counter_future());
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter]() mutable {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::increase_counter_future());
+        });
     });
+
 }
 
 auto local_actor_void() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(0);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() mutable {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::increase_counter_void());
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter]() mutable {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::increase_counter_void());
+        });
     });
 }
 
@@ -167,11 +172,13 @@ auto local_actor_int_future() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(0);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::get_counter_future()).discard_result();
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter]() {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::get_counter_future()).discard_result();
+        });
     });
 }
 
@@ -179,11 +186,13 @@ auto local_actor_int() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(0);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::get_counter_int()).discard_result();
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter]() {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::get_counter_int()).discard_result();
+        });
     });
 }
 
@@ -191,11 +200,13 @@ auto local_actor_future_args() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(0);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::accumulate_future(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter]() {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::accumulate_future(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+        });
     });
 }
 
@@ -203,11 +214,13 @@ auto local_actor_int_args() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(0);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::accumulate_value(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter]() {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::accumulate_value(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+        });
     });
 }
 
@@ -215,11 +228,13 @@ auto collocated_actor_void_future() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(1);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() mutable {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::increase_counter_future());
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter]() mutable {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::increase_counter_future());
+        });
     });
 }
 
@@ -227,11 +242,13 @@ auto collocated_actor_void() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(1);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() mutable {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::increase_counter_void());
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter]() mutable {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::increase_counter_void());
+        });
     });
 }
 
@@ -239,11 +256,13 @@ auto collocated_actor_int_future() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(1);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::get_counter_future()).discard_result();
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter] {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::get_counter_future()).discard_result();
+        });
     });
 }
 
@@ -251,11 +270,13 @@ auto collocated_actor_int() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(1);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::get_counter_int()).discard_result();
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter] {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::get_counter_int()).discard_result();
+        });
     });
 }
 
@@ -263,11 +284,13 @@ auto collocated_actor_future_args() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(1);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::accumulate_future(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter] {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::accumulate_future(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+        });
     });
 }
 
@@ -275,11 +298,13 @@ auto collocated_actor_int_args() {
     int *counter = new int(0);
 
     auto counterActor = ultramarine::get<counter_actor>(1);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter]() {
-        ++*counter;
-        return counterActor.tell(counter_actor::message::accumulate_value(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+    return counterActor.visit([counter] (auto &counterActor){
+        return seastar::do_until([counter] {
+            return *counter >= 10000;
+        }, [counterActor, counter] {
+            ++*counter;
+            return counterActor.tell(counter_actor::message::accumulate_value(), std::vector<int>{10, 12, 30, *counter}).discard_result();
+        });
     });
 }
 
