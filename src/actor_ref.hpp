@@ -110,30 +110,6 @@ namespace ultramarine {
         }
     };
 
-//    AFTER AFTER
-//    plain_object_future_args: 173 us (min: 171 us -- 99p: 181 us)
-//    local_actor_future_args: 167 us (min: 166 us -- 99p: 170 us)
-//    collocated_actor_future_args: 7011 us (min: 6846 us -- 99p: 7503 us)
-//    plain_object_int_args: 69 us (min: 68 us -- 99p: 72 us)
-//    local_actor_int_args: 171 us (min: 166 us -- 99p: 207 us)
-//    collocated_actor_int_args: 7001 us (min: 6850 us -- 99p: 7304 us)
-
-//    AFTER
-//    plain_object_future_args: 176 us (min: 175 us -- 99p: 182 us)
-//    local_actor_future_args: 254 us (min: 242 us -- 99p: 374 us)
-//    collocated_actor_future_args: 7046 us (min: 6942 us -- 99p: 7165 us)
-//    plain_object_int_args: 70 us (min: 68 us -- 99p: 74 us)
-//    local_actor_int_args: 244 us (min: 239 us -- 99p: 250 us)
-//    collocated_actor_int_args: 7059 us (min: 6931 us -- 99p: 7176 us)
-
-//    BEFORE
-//    plain_object_future_args: 177 us (min: 175 us -- 99p: 181 us)
-//    local_actor_future_args: 247 us (min: 242 us -- 99p: 263 us)
-//    collocated_actor_future_args: 8024 us (min: 7216 us -- 99p: 18987 us)
-//    plain_object_int_args: 73 us (min: 67 us -- 99p: 108 us)
-//    local_actor_int_args: 296 us (min: 276 us -- 99p: 442 us)
-//    collocated_actor_int_args: 8956 us (min: 7299 us -- 99p: 24382 us)
-
     template<typename Actor>
     class local_actor_ref : public actor_ref_impl<Actor, local_actor_ref<Actor>> {
         Actor *inst = nullptr;
