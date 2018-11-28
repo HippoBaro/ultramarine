@@ -25,7 +25,6 @@
 #pragma once
 
 #include <boost/preprocessor/seq/for_each_i.hpp>
-#include <boost/preprocessor/stringize.hpp>
 #include <boost/hana.hpp>
 
 #define ULTRAMARINE_MAKE_TAG(a, b, i, tag)                                                                  \

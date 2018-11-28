@@ -41,18 +41,15 @@ namespace ultramarine {
     };
 
     template <typename ActorKind>
-    using directory = std::unordered_map<actor_id, std::optional<ActorKind>>;
+    using directory = std::unordered_map<actor_id, ActorKind>;
 
     template<typename Actor>
     Actor *hold_activation(actor_id id) {
-        if (!Actor::directory) {
+        if (!Actor::directory) [[unlikely]] {
             Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
         }
 
-        auto &r = (*Actor::directory)[id];
-        if (!r) {
-            r.emplace(id);
-        }
-        return &(*r);
+        auto r = std::get<0>(Actor::directory->try_emplace(id, id));
+        return &(std::get<1>(*r));
     }
 }

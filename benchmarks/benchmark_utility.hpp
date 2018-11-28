@@ -42,7 +42,7 @@ namespace ultramarine::benchmark {
                                 std::vector<std::chrono::microseconds::rep>(),
                                 [counter](auto &bench, auto &vec) {
                                     return seastar::do_until([counter] {
-                                        return *counter > 500;
+                                        return *counter > 1000;
                                     }, [counter, &bench, &vec] {
                                         ++*counter;
                                         using namespace std::chrono;
@@ -55,9 +55,8 @@ namespace ultramarine::benchmark {
                                     }).then([&vec, &bench] {
                                         std::sort(std::begin(vec), std::end(vec));
                                         auto sum = std::accumulate(std::begin(vec), std::end(vec), 0);
-                                        seastar::print("%s: %lu us (min: %lu us -- 99p: %lu us)\n", std::get<0>(bench),
-                                                       sum / (vec.size()), *std::begin(vec),
-                                                       *(std::end(vec) - 10));
+                                        seastar::print("%s: %lu us (min: %lu us -- 99.9p: %lu us)\n", std::get<0>(bench),
+                                                       sum / (vec.size()), *std::begin(vec), *(std::end(vec) - 1));
                                     });
                                 });
     }

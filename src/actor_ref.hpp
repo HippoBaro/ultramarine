@@ -25,7 +25,6 @@
 #pragma once
 
 #include <variant>
-#include <core/print.hh>
 #include <core/reactor.hh>
 #include "actor.hpp"
 
