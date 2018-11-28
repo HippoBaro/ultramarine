@@ -4,6 +4,7 @@ set (CMAKE_CXX_STANDARD 17)
 
 # Options
 option(ULTRAMARINE_BUILD_APPS "Include apps/ as part of the build" ON)
+option(ULTRAMARINE_BUILD_UNITTESTS "Include tests/ as part of the build" ON)
 option(ULTRAMARINE_BUILD_BENCHMARKS "Include benchmarks/ as part of the build" ON)
 
 # Dependencies
@@ -25,7 +26,13 @@ if (${ULTRAMARINE_BUILD_APPS})
     add_subdirectory(apps)
 endif()
 
+# Unit tests
+if (${ULTRAMARINE_BUILD_UNITTESTS})
+    add_subdirectory(tests)
+endif()
+
 # Benchmarks
 if (${ULTRAMARINE_BUILD_BENCHMARKS})
+
     add_subdirectory(benchmarks)
 endif()
