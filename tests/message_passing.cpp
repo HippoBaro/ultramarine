@@ -22,10 +22,21 @@
  * SOFTWARE.
  */
 
-#include "unit-testing.hpp"
+#include <numeric>
+#include <tests/test-utils.hh>
+#include <core/thread.hh>
 #include "actor.hpp"
 #include "actor_ref.hpp"
 #include "macro.hpp"
+
+struct no_copy_message {
+    int count = 0;
+    no_copy_message() = default;
+    no_copy_message(no_copy_message const&) = delete;
+    no_copy_message(no_copy_message &&other)  noexcept {
+        count = other.count + 1;
+    };
+};
 
 class counter_actor : ultramarine::actor {
 public:
@@ -44,39 +55,78 @@ public:
         return seastar::make_ready_future<int>(counter);
     }
 
+    seastar::future<seastar::shard_id> get_execution_shard() const {
+        return seastar::make_ready_future<seastar::shard_id>(seastar::engine().cpu_id());
+    }
+
     int get_counter_int() const {
         return counter;
     }
 
-    seastar::future<int> accumulate_future(std::vector<int> const& pack) const {
-        return seastar::make_ready_future<int>(std::accumulate(std::begin(pack), std::end(pack), 0));
-    }
-
-    int accumulate_value(std::vector<int> const& pack) const {
-        return std::accumulate(std::begin(pack), std::end(pack), 0);
+    void move_arg_message(no_copy_message arg) const {
+        printf("Moved %d times\n", arg.count);
+        BOOST_REQUIRE(arg.count == 1);
     }
 
     ULTRAMARINE_DEFINE_ACTOR(counter_actor,
+                             (get_execution_shard)
                              (increase_counter_future)(increase_counter_void)
                              (get_counter_future)(get_counter_int)
-                             (accumulate_future)(accumulate_value));
+                             (move_arg_message));
 };
+
 ULTRAMARINE_IMPLEMENT_ACTOR(counter_actor);
 
-TEST_CASE ("Same-core mutating future message passing") {
+using namespace seastar;
+
+SEASTAR_THREAD_TEST_CASE (same_core_mutating_future_message_passing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    counterActor.tell(counter_actor::message::increase_counter_future()).then([counterActor] {
-        return counterActor.tell(counter_actor::message::get_counter_int()).then([] (int value) {
-            REQUIRE(value == 1);
-        });
-    }).wait();
+
+    BOOST_REQUIRE(counterActor.tell(counter_actor::message::get_execution_shard()).get0() == seastar::engine().cpu_id());
+
+    auto ival = counterActor.tell(counter_actor::message::get_counter_int()).get0();
+    counterActor.tell(counter_actor::message::increase_counter_future()).wait();
+    auto nval = counterActor.tell(counter_actor::message::get_counter_int()).get0();
+    BOOST_REQUIRE(nval == ival+1);
 }
 
-TEST_CASE ("Same-core mutating void message passing") {
+SEASTAR_THREAD_TEST_CASE (same_core_mutating_void_message_passing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    counterActor.tell(counter_actor::message::increase_counter_void()).then([counterActor] {
-        return counterActor.tell(counter_actor::message::get_counter_int()).then([] (int value) {
-            REQUIRE(value == 1);
-        });
-    }).wait();
+
+    BOOST_REQUIRE(counterActor.tell(counter_actor::message::get_execution_shard()).get0() == seastar::engine().cpu_id());
+
+    auto ival = counterActor.tell(counter_actor::message::get_counter_int()).get0();
+    counterActor.tell(counter_actor::message::increase_counter_void()).wait();
+    auto nval = counterActor.tell(counter_actor::message::get_counter_int()).get0();
+    BOOST_REQUIRE(nval == ival+1);
+}
+
+SEASTAR_THREAD_TEST_CASE (same_core_nocopy_arg_message_passing) {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+
+    BOOST_REQUIRE(counterActor.tell(counter_actor::message::get_execution_shard()).get0() == seastar::engine().cpu_id());
+
+    counterActor.tell(counter_actor::message::move_arg_message(), no_copy_message());//.wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (collocated_core_mutating_future_message_passing) {
+    auto counterActor = ultramarine::get<counter_actor>(1);
+
+    BOOST_REQUIRE(counterActor.tell(counter_actor::message::get_execution_shard()).get0() != seastar::engine().cpu_id());
+
+    auto ival = counterActor.tell(counter_actor::message::get_counter_int()).get0();
+    counterActor.tell(counter_actor::message::increase_counter_future()).wait();
+    auto nval = counterActor.tell(counter_actor::message::get_counter_int()).get0();
+    BOOST_REQUIRE(nval == ival+1);
+}
+
+SEASTAR_THREAD_TEST_CASE (collocated_core_mutating_void_message_passing) {
+    auto counterActor = ultramarine::get<counter_actor>(1);
+
+    BOOST_REQUIRE(counterActor.tell(counter_actor::message::get_execution_shard()).get0() != seastar::engine().cpu_id());
+
+    auto ival = counterActor.tell(counter_actor::message::get_counter_int()).get0();
+    counterActor.tell(counter_actor::message::increase_counter_void()).wait();
+    auto nval = counterActor.tell(counter_actor::message::get_counter_int()).get0();
+    BOOST_REQUIRE(nval == ival+1);
 }
