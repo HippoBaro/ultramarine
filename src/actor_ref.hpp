@@ -41,22 +41,22 @@ namespace ultramarine {
         template<typename Handler, typename ...Args>
         auto inline tell(Handler message, Args &&... args) const {
 
-            using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor, Args ...)>;
+            using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor, Args &&...)>;
 
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
                 if constexpr (std::is_void<ret_type>::value) {
                     return std::apply([this, message](auto &&... args) {
-                        static_cast<Impl const *>(this)->schedule(ref, message, args...);
+                        static_cast<Impl const *>(this)->schedule(ref, message, std::forward<Args>(args) ...);
                     }, std::move(args));
                 } else if constexpr (!seastar::is_future<ret_type>::value) {
-                    return seastar::futurize<ret_type>::apply([this, message, &args] {
+                    return seastar::futurize<ret_type>::apply([this, message, args = std::forward<decltype(args)>(args)] () mutable {
                         return std::apply([this, message](auto &&... args) {
-                            return static_cast<Impl const *>(this)->schedule(ref, message, args...);
+                            return static_cast<Impl const *>(this)->schedule(ref, message, std::forward<Args>(args) ...);
                         }, std::move(args));
                     });
                 } else {
                     return std::apply([this, message](auto &&... args) {
-                        return static_cast<Impl const *>(this)->schedule(ref, message, args...);
+                        return static_cast<Impl const *>(this)->schedule(ref, message, std::forward<Args>(args) ...);
                     }, std::move(args));
                 }
             }();
@@ -100,9 +100,9 @@ namespace ultramarine {
         template<typename Handler, typename ...Args>
         auto schedule(actor_id id, Handler message, Args &&... args) const {
             return [this, id, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
-                return seastar::smp::submit_to(loc, [id, message, args = std::move(args)] {
+                return seastar::smp::submit_to(loc, [id, message, args = std::forward<decltype(args)>(args)] () mutable {
                     return std::apply([id, message](auto &&... args) {
-                        return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])(std::move(args)...);
+                        return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
                     }, std::move(args));
                 });
             }();
@@ -125,7 +125,7 @@ namespace ultramarine {
 
         template<typename Handler, typename ...Args>
         auto schedule(actor_id, Handler message, Args &&... args) const {
-            return (inst->*vtable<Actor>::table[message])(std::move(args)...);
+            return (inst->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
         }
     };
 
@@ -146,8 +146,9 @@ namespace ultramarine {
     };
 
     template<typename Actor>
-    struct actor_ref {
+    class actor_ref {
         actor_ref_variant<Actor> impl;
+    public:
 
         explicit actor_ref(actor_id id) : impl(actor_directory::locate<Actor>(id)) {}
 
@@ -161,7 +162,7 @@ namespace ultramarine {
 
         template<typename Func>
         auto visit(Func &&func) const {
-            return std::visit([func = std::move(func)](auto &impl) {
+            return std::visit([func = std::forward<Func>(func)](auto &impl) mutable {
                 return func(impl);
             }, impl);
         }
@@ -169,9 +170,9 @@ namespace ultramarine {
         template<typename Handler, typename ...Args>
         auto inline tell(Handler message, Args &&... args) const {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
-                return visit([message, args = std::move(args)](auto &&impl) {
-                    return std::apply([&impl, message](auto &&... args) {
-                        return impl.tell(message);
+                return visit([message, args = std::forward<decltype(args)>(args)](auto &&impl) mutable {
+                    return std::apply([&impl, message](Args &&... args) {
+                        return impl.tell(message, std::forward<Args>(args) ...);
                     }, std::move(args));
                 });
             }();
