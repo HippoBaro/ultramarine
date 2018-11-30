@@ -34,13 +34,13 @@ namespace ultramarine {
         static constexpr auto table = Actor::message::make_vtable();
     };
 
-    template<typename Actor, typename Impl>
+    template<typename Impl>
     struct actor_ref_impl {
         actor_id ref;
 
         template<typename Handler, typename ...Args>
         constexpr auto tell(Handler message, Args &&... args) const {
-
+            using Actor = typename Impl::ActorType;
             using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor, Args &&...)>;
 
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
@@ -67,6 +67,7 @@ namespace ultramarine {
 
         template<typename Handler>
         constexpr auto tell(Handler message) const {
+            using Actor = typename Impl::ActorType;
             using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor)>;
 
             if constexpr (std::is_void<ret_type>::value) {
@@ -84,14 +85,16 @@ namespace ultramarine {
     };
 
     template<typename Actor>
-    class collocated_actor_ref : public actor_ref_impl<Actor, collocated_actor_ref<Actor>> {
+    class collocated_actor_ref : public actor_ref_impl<collocated_actor_ref<Actor>> {
         seastar::shard_id loc;
 
     public:
-        explicit constexpr collocated_actor_ref(actor_id ref, seastar::shard_id loc)
-                : actor_ref_impl<Actor, collocated_actor_ref<Actor>>{ref}, loc(loc) {}
+        using ActorType = Actor;
 
-        using actor_ref_impl<Actor, collocated_actor_ref>::tell;
+        explicit constexpr collocated_actor_ref(actor_id ref, seastar::shard_id loc)
+                : actor_ref_impl<collocated_actor_ref<Actor>>{ref}, loc(loc) {}
+
+        using actor_ref_impl<collocated_actor_ref>::tell;
 
         template<typename Handler>
         inline constexpr auto schedule(actor_id id, Handler message) const {
@@ -112,13 +115,15 @@ namespace ultramarine {
     };
 
     template<typename Actor>
-    class local_actor_ref : public actor_ref_impl<Actor, local_actor_ref<Actor>> {
+    class local_actor_ref : public actor_ref_impl<local_actor_ref<Actor>> {
         Actor *inst = nullptr;
 
     public:
-        explicit constexpr local_actor_ref(actor_id id) : actor_ref_impl<Actor, local_actor_ref<Actor>>{id},
+        using ActorType = Actor;
+
+        explicit constexpr local_actor_ref(actor_id id) : actor_ref_impl<local_actor_ref<Actor>>{id},
                                                 inst(hold_activation<Actor>(id)) {};
-        using actor_ref_impl<Actor, local_actor_ref<Actor>>::tell;
+        using actor_ref_impl<local_actor_ref<Actor>>::tell;
 
         template<typename Handler>
         inline constexpr auto schedule(actor_id, Handler message) const {
