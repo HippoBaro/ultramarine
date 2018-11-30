@@ -189,7 +189,7 @@ namespace ultramarine {
     };
 
     template<typename Actor>
-    constexpr inline actor_ref<Actor> get(actor_id id) noexcept {
+    [[nodiscard]] constexpr inline actor_ref<Actor> get(actor_id id) noexcept {
         return actor_ref<Actor>(id);
     }
 }

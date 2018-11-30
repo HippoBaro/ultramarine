@@ -33,6 +33,5 @@ endif()
 
 # Benchmarks
 if (${ULTRAMARINE_BUILD_BENCHMARKS})
-
     add_subdirectory(benchmarks)
 endif()

@@ -48,11 +48,11 @@ public:
         return counter;
     }
 
-    seastar::future<int> accumulate_future(std::vector<int> const& pack) const {
+    seastar::future<int> accumulate_future(std::vector<int> pack) const {
         return seastar::make_ready_future<int>(std::accumulate(std::begin(pack), std::end(pack), 0));
     }
 
-    int accumulate_value(std::vector<int> const& pack) const {
+    int accumulate_value(std::vector<int> pack) const {
         return std::accumulate(std::begin(pack), std::end(pack), 0);
     }
 
