@@ -1,5 +1,16 @@
+function(add_ultramarine_test)
+    set(options CUSTOM SUITE)
+    set(one_value_args NAME)
+    set(multi_value_args SOURCES ARGS)
+    cmake_parse_arguments(args "${options}" "${one_value_args}" "${multi_value_args}" "${ARGN}")
 
-#file(GLOB SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+    add_seastar_test(${ARGN})
+    target_link_libraries(${args_NAME} PRIVATE ultramarine)
+    target_link_libraries(${args_NAME}_g PRIVATE ultramarine)
+endfunction()
 
-add_executable(test-message_passing message_passing.cpp)
-target_link_libraries(test-message_passing PRIVATE ultramarine seastar-testing)
+find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+
+add_ultramarine_test(NAME test-message_passing
+        SUITE
+        SOURCES message_passing.cpp)
