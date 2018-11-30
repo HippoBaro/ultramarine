@@ -45,13 +45,16 @@ namespace ultramarine {
 
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
                 if constexpr (std::is_void<ret_type>::value) {
-                    return std::apply([this, message](auto &&... args) {
-                        static_cast<Impl const *>(this)->schedule(ref, message, std::forward<Args>(args) ...);
-                    }, std::move(args));
-                } else if constexpr (!seastar::is_future<ret_type>::value) {
-                    return seastar::futurize<ret_type>::apply([this, message, args = std::forward<decltype(args)>(args)] () mutable {
+                    return seastar::futurize<ret_type>::apply([this, message, &args] {
                         return std::apply([this, message](auto &&... args) {
-                            return static_cast<Impl const *>(this)->schedule(ref, message, std::forward<Args>(args) ...);
+                            static_cast<Impl const *>(this)->schedule(ref, message, std::forward<Args>(args) ...);
+                        }, std::move(args));
+                    });
+                } else if constexpr (!seastar::is_future<ret_type>::value) {
+                    return seastar::futurize<ret_type>::apply([this, message, &args]() mutable {
+                        return std::apply([this, message](auto &&... args) {
+                            return static_cast<Impl const *>(this)->schedule(ref, message,
+                                                                             std::forward<Args>(args) ...);
                         }, std::move(args));
                     });
                 } else {
@@ -99,13 +102,12 @@ namespace ultramarine {
 
         template<typename Handler, typename ...Args>
         auto schedule(actor_id id, Handler message, Args &&... args) const {
-            return [this, id, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
-                return seastar::smp::submit_to(loc, [id, message, args = std::forward<decltype(args)>(args)] () mutable {
-                    return std::apply([id, message](auto &&... args) {
-                        return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
-                    }, std::move(args));
-                });
-            }();
+            return seastar::smp::submit_to(loc, [id, message, args = std::make_tuple(
+                    std::forward<Args>(args) ...)]() mutable {
+                return std::apply([id, message](auto &&... args) {
+                    return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
+                }, std::move(args));
+            });
         }
     };
 
@@ -170,7 +172,7 @@ namespace ultramarine {
         template<typename Handler, typename ...Args>
         auto inline tell(Handler message, Args &&... args) const {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
-                return visit([message, args = std::forward<decltype(args)>(args)](auto &&impl) mutable {
+                return visit([message, &args](auto &&impl) mutable {
                     return std::apply([&impl, message](Args &&... args) {
                         return impl.tell(message, std::forward<Args>(args) ...);
                     }, std::move(args));
