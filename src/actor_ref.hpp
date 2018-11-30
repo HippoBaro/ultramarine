@@ -39,7 +39,7 @@ namespace ultramarine {
         actor_id ref;
 
         template<typename Handler, typename ...Args>
-        auto inline tell(Handler message, Args &&... args) const {
+        constexpr auto tell(Handler message, Args &&... args) const {
 
             using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor, Args &&...)>;
 
@@ -66,7 +66,7 @@ namespace ultramarine {
         }
 
         template<typename Handler>
-        auto inline tell(Handler message) const {
+        constexpr auto tell(Handler message) const {
             using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor)>;
 
             if constexpr (std::is_void<ret_type>::value) {
@@ -88,20 +88,20 @@ namespace ultramarine {
         seastar::shard_id loc;
 
     public:
-        explicit collocated_actor_ref(actor_id ref, seastar::shard_id loc)
+        explicit constexpr collocated_actor_ref(actor_id ref, seastar::shard_id loc)
                 : actor_ref_impl<Actor, collocated_actor_ref<Actor>>{ref}, loc(loc) {}
 
         using actor_ref_impl<Actor, collocated_actor_ref>::tell;
 
         template<typename Handler>
-        auto schedule(actor_id id, Handler message) const {
+        inline constexpr auto schedule(actor_id id, Handler message) const {
             return seastar::smp::submit_to(loc, [id, message] {
                 return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])();
             });
         }
 
         template<typename Handler, typename ...Args>
-        auto schedule(actor_id id, Handler message, Args &&... args) const {
+        inline constexpr auto schedule(actor_id id, Handler message, Args &&... args) const {
             return seastar::smp::submit_to(loc, [id, message, args = std::make_tuple(
                     std::forward<Args>(args) ...)]() mutable {
                 return std::apply([id, message](auto &&... args) {
@@ -116,17 +116,17 @@ namespace ultramarine {
         Actor *inst = nullptr;
 
     public:
-        explicit local_actor_ref(actor_id id) : actor_ref_impl<Actor, local_actor_ref<Actor>>{id},
+        explicit constexpr local_actor_ref(actor_id id) : actor_ref_impl<Actor, local_actor_ref<Actor>>{id},
                                                 inst(hold_activation<Actor>(id)) {};
         using actor_ref_impl<Actor, local_actor_ref<Actor>>::tell;
 
         template<typename Handler>
-        auto schedule(actor_id, Handler message) const {
+        inline constexpr auto schedule(actor_id, Handler message) const {
             return (inst->*vtable<Actor>::table[message])();
         }
 
         template<typename Handler, typename ...Args>
-        auto schedule(actor_id, Handler message, Args &&... args) const {
+        inline constexpr auto schedule(actor_id, Handler message, Args &&... args) const {
             return (inst->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
         }
     };
@@ -137,7 +137,7 @@ namespace ultramarine {
     class actor_directory {
     public:
         template<typename Actor>
-        static actor_ref_variant<Actor> locate(actor_id id) {
+        [[nodiscard]] static constexpr actor_ref_variant<Actor> locate(actor_id id) noexcept {
             auto shard = id % seastar::smp::count;
             if (shard == seastar::engine().cpu_id()) {
                 return local_actor_ref<Actor>(id);
@@ -152,27 +152,27 @@ namespace ultramarine {
         actor_ref_variant<Actor> impl;
     public:
 
-        explicit actor_ref(actor_id id) : impl(actor_directory::locate<Actor>(id)) {}
+        explicit constexpr actor_ref(actor_id id) : impl(actor_directory::locate<Actor>(id)) {}
 
-        explicit actor_ref(local_actor_ref<Actor> &ref) : impl(ref) {};
+        explicit constexpr actor_ref(local_actor_ref<Actor> &ref) : impl(ref) {};
 
-        explicit actor_ref(collocated_actor_ref<Actor> &ref) : impl(ref) {};
+        explicit constexpr actor_ref(collocated_actor_ref<Actor> &ref) : impl(ref) {};
 
-        actor_ref(actor_ref const &) = default;
+        constexpr actor_ref(actor_ref const &) = default;
 
-        actor_ref(actor_ref &&) noexcept = default;
+        constexpr actor_ref(actor_ref &&) noexcept = default;
 
         template<typename Func>
-        auto visit(Func &&func) const {
+        inline constexpr auto visit(Func &&func)  const noexcept {
             return std::visit([func = std::forward<Func>(func)](auto &impl) mutable {
                 return func(impl);
             }, impl);
         }
 
         template<typename Handler, typename ...Args>
-        auto inline tell(Handler message, Args &&... args) const {
+        constexpr auto inline tell(Handler message, Args &&... args) const {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
-                return visit([message, &args](auto &&impl) mutable {
+                return visit([message, &args](auto &&impl) {
                     return std::apply([&impl, message](Args &&... args) {
                         return impl.tell(message, std::forward<Args>(args) ...);
                     }, std::move(args));
@@ -181,7 +181,7 @@ namespace ultramarine {
         }
 
         template<typename Handler>
-        auto inline tell(Handler message) const {
+        constexpr auto inline tell(Handler message) const {
             return visit([message](auto &&impl) {
                 return impl.tell(message);
             });
@@ -189,7 +189,7 @@ namespace ultramarine {
     };
 
     template<typename Actor>
-    inline actor_ref<Actor> get(actor_id id) {
+    constexpr inline actor_ref<Actor> get(actor_id id) noexcept {
         return actor_ref<Actor>(id);
     }
 }

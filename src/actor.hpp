@@ -44,7 +44,7 @@ namespace ultramarine {
     using directory = std::unordered_map<actor_id, ActorKind>;
 
     template<typename Actor>
-    Actor *hold_activation(actor_id id) {
+    [[nodiscard]] constexpr Actor *hold_activation(actor_id id) {
         if (!Actor::directory) [[unlikely]] {
             Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
         }
