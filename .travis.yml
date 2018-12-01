@@ -30,7 +30,7 @@ dependencies:
 matrix:
   include:
   # GCC 7, DPDK enabled
-  - env: DPDK_MODE="--enable-dpdk" COMPILER="g++-7" C_COMPILER="gcc-7"
+  - env: DPDK_MODE="ON" COMPILER="g++-7" C_COMPILER="gcc-7"
     addons: &gcc7
       apt:
         sources:
@@ -41,13 +41,13 @@ matrix:
         - *seastar_deps
         - g++-7
   # GCC 7, DPDK disabled
-  - env: DPDK_MODE="" COMPILER="g++-7" C_COMPILER="gcc-7"
+  - env: DPDK_MODE="OFF" COMPILER="g++-7" C_COMPILER="gcc-7"
     addons: *gcc7
   # Clang 5.0, DPDK disabled
   # Suppress unused lambda capture warning due to a Clang bug (see https://reviews.llvm.org/rL296602)
   # Suppress missing braces warning due to a Clang bug (see https://bugs.llvm.org/show_bug.cgi?id=21629)
   # Need g++-7 to bring up-to-date libstdc++ in
-  - env: DPDK_MODE="" COMPILER="clang++-7" C_COMPILER="clang-7" CFLAGS="-Wno-unused-lambda-capture -Wno-missing-braces"
+  - env: DPDK_MODE="OFF" COMPILER="clang++-7" C_COMPILER="clang-7" CFLAGS="-Wno-unused-lambda-capture -Wno-missing-braces"
     compiler: clang
     addons: &clang7
       apt:
@@ -68,7 +68,7 @@ install:
 
 before_script:
 - mkdir build && cd build
-- LDFLAGS="-L/opt/scylladb/lib/x86_64-linux-gnu/" /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${COMPILER} -DCMAKE_C_COMPILER=${C_COMPILER} -DCMAKE_CXX_FLAGS="-I/opt/scylladb/include/ $CFLAGS" -DBOOST_INCLUDEDIR="/opt/scylladb/include" -DBOOST_LIBRARYDIR="/opt/scylladb/lib/x86_64-linux-gnu/" -GNinja ..
+- LDFLAGS="-L/opt/scylladb/lib/x86_64-linux-gnu/" /usr/local/bin/cmake -DCMAKE_BUILD_TYPE=Release -DSEASTAR_ENABLE_DPDK=${DPDK_MODE} -DCMAKE_CXX_COMPILER=${COMPILER} -DCMAKE_C_COMPILER=${C_COMPILER} -DCMAKE_CXX_FLAGS="-I/opt/scylladb/include/ $CFLAGS" -DBOOST_INCLUDEDIR="/opt/scylladb/include" -DBOOST_LIBRARYDIR="/opt/scylladb/lib/x86_64-linux-gnu/" -GNinja ..
 
 script:
 - ninja -j`nproc --all`
