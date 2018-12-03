@@ -95,8 +95,9 @@ namespace ultramarine {
     public:
         using ActorType = Actor;
 
-        explicit constexpr collocated_actor_ref(ActorKey<Actor> &&k, std::size_t hash, seastar::shard_id loc):
-            actor_ref_impl<collocated_actor_ref<Actor>>(hash), key(k), loc(loc) {}
+        template <typename KeyType>
+        explicit constexpr collocated_actor_ref(KeyType &&k, std::size_t hash, seastar::shard_id loc):
+            actor_ref_impl<collocated_actor_ref<Actor>>(hash), key(std::forward<KeyType>(k)), loc(loc) {}
 
         using actor_ref_impl<collocated_actor_ref>::tell;
 
@@ -126,8 +127,9 @@ namespace ultramarine {
     public:
         using ActorType = Actor;
 
-        explicit constexpr local_actor_ref(ActorKey<Actor> &&k, std::size_t hash) :
-            actor_ref_impl<local_actor_ref<Actor>>{hash}, key(std::forward<ActorKey<Actor>>(k)),
+        template <typename KeyType>
+        explicit constexpr local_actor_ref(KeyType &&k, std::size_t hash) :
+            actor_ref_impl<local_actor_ref<Actor>>{hash}, key(std::forward<KeyType>(k)),
             inst(hold_activation<Actor>(key, hash)) {};
 
         using actor_ref_impl<local_actor_ref<Actor>>::tell;
@@ -148,14 +150,14 @@ namespace ultramarine {
 
     class actor_directory {
     public:
-        template<typename Actor>
-        [[nodiscard]] static constexpr actor_ref_variant<Actor> locate(ActorKey<Actor> &&key) noexcept {
+        template<typename Actor, typename KeyType>
+        [[nodiscard]] static constexpr actor_ref_variant<Actor> locate(KeyType &&key) noexcept {
             auto hash = std::hash<ActorKey<Actor>>{}(key);
             auto shard = hash % seastar::smp::count;
             if (shard == seastar::engine().cpu_id()) {
-                return local_actor_ref<Actor>(std::forward<ActorKey<Actor>>(key), hash);
+                return local_actor_ref<Actor>(std::forward<KeyType>(key), hash);
             } else {
-                return collocated_actor_ref<Actor>(std::forward<ActorKey<Actor>>(key), hash, shard);
+                return collocated_actor_ref<Actor>(std::forward<KeyType>(key), hash, shard);
             }
         }
     };
@@ -165,8 +167,9 @@ namespace ultramarine {
         actor_ref_variant<Actor> impl;
     public:
 
-        explicit constexpr actor_ref(ActorKey <Actor> &&key) :
-                impl(actor_directory::locate<Actor>(std::forward<ActorKey<Actor>>(key))) {}
+        template <typename KeyType>
+        explicit constexpr actor_ref(KeyType &&key) :
+                impl(actor_directory::locate<Actor>(std::forward<KeyType>(key))) {}
 
         explicit constexpr actor_ref(local_actor_ref<Actor> &ref) : impl(ref) {};
 
@@ -202,8 +205,8 @@ namespace ultramarine {
         };
     };
 
-    template<typename Actor>
-    [[nodiscard]] constexpr inline actor_ref<Actor> get(ActorKey<Actor> &&key) noexcept {
-        return actor_ref<Actor>(std::forward<ActorKey<Actor>>(key));
+    template<typename Actor, typename KeyType>
+    [[nodiscard]] constexpr inline actor_ref<Actor> get(KeyType &&key) noexcept {
+        return actor_ref<Actor>(std::forward<KeyType>(key));
     }
 }
