@@ -7,6 +7,8 @@ function(add_ultramarine_test)
     add_seastar_test(${ARGN})
     target_link_libraries(${args_NAME} PRIVATE ultramarine)
     target_link_libraries(${args_NAME}_g PRIVATE ultramarine)
+    add_dependencies (ultramarine-tests ${args_NAME})
+    add_dependencies (ultramarine-tests-debug ${args_NAME}_g)
 
     foreach (FILE ${args_SOURCES})
         file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${FILE}" SOURCE_FILE_CONTENTS)
@@ -24,6 +26,11 @@ function(add_ultramarine_test)
                 --run_test=${TEST_NAME} --catch_system_error=yes)
     endforeach ()
 endfunction()
+
+# Logical target for all tests.
+add_custom_target (ultramarine-tests)
+# Logical target for all tests with debugging symbols.
+add_custom_target (ultramarine-tests-debug)
 
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 
