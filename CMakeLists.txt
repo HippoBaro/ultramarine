@@ -29,7 +29,7 @@ endif()
 # Unit tests
 if (${ULTRAMARINE_BUILD_UNITTESTS})
     enable_testing()
-    add_subdirectory(tests)
+    add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif()
 
 # Benchmarks
