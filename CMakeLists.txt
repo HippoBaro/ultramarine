@@ -28,6 +28,7 @@ endif()
 
 # Unit tests
 if (${ULTRAMARINE_BUILD_UNITTESTS})
+    enable_testing()
     add_subdirectory(tests)
 endif()
 

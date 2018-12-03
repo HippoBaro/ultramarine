@@ -7,14 +7,28 @@ function(add_ultramarine_test)
     add_seastar_test(${ARGN})
     target_link_libraries(${args_NAME} PRIVATE ultramarine)
     target_link_libraries(${args_NAME}_g PRIVATE ultramarine)
+
+    foreach (FILE ${args_SOURCES})
+        file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${FILE}" SOURCE_FILE_CONTENTS)
+        string(REGEX MATCHALL "SEASTAR_THREAD_TEST_CASE ?\\( *([A-Za-z_0-9]+) *\\)"
+                FOUND_TESTS_LOCAL ${SOURCE_FILE_CONTENTS})
+        list(APPEND FOUND_TESTS ${FOUND_TESTS_LOCAL})
+    endforeach ()
+
+    foreach (HIT ${FOUND_TESTS})
+        string(REGEX REPLACE ".*\\( *([A-Za-z_0-9]+) *\\).*" "\\1" TEST_NAME ${HIT})
+        message(STATUS "Discovered unit-test ${TEST_NAME}")
+
+        add_test(NAME "${args_NAME}.${TEST_NAME}"
+                COMMAND ${args_NAME}
+                --run_test=${TEST_NAME} --catch_system_error=yes)
+    endforeach ()
 endfunction()
 
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 
 add_ultramarine_test(NAME test-message_passing
-        SUITE
         SOURCES message_passing.cpp)
 
 add_ultramarine_test(NAME test-actor_keys
-        SUITE
         SOURCES actor_keys.cpp)
