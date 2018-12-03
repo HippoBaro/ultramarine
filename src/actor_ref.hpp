@@ -44,7 +44,6 @@ namespace ultramarine {
         constexpr auto tell(Handler message, Args &&... args) const {
             using Actor = typename Impl::ActorType;
             using Return = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor, Args &&...)>;
-            using Key = ActorKey<typename Impl::ActorType>;
 
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
                 if constexpr (std::is_void<Return>::value) {
@@ -71,7 +70,6 @@ namespace ultramarine {
         constexpr auto tell(Handler message) const {
             using Actor = typename Impl::ActorType;
             using Return = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor)>;
-            using Key = ActorKey<typename Impl::ActorType>;
 
             if constexpr (std::is_void<Return>::value) {
                 return seastar::futurize<Return>::apply([this, message] {
