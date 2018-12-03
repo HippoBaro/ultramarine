@@ -36,30 +36,32 @@ namespace ultramarine {
 
     template<typename Impl>
     struct actor_ref_impl {
-        actor_id ref;
+        std::size_t hash;
+
+        explicit constexpr actor_ref_impl(std::size_t hash) : hash(hash) {}
 
         template<typename Handler, typename ...Args>
         constexpr auto tell(Handler message, Args &&... args) const {
             using Actor = typename Impl::ActorType;
-            using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor, Args &&...)>;
+            using Return = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor, Args &&...)>;
+            using Key = ActorKey<typename Impl::ActorType>;
 
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
-                if constexpr (std::is_void<ret_type>::value) {
-                    return seastar::futurize<ret_type>::apply([this, message, &args] {
+                if constexpr (std::is_void<Return>::value) {
+                    return seastar::futurize<Return>::apply([this, message, &args] {
                         return std::apply([this, message](auto &&... args) {
-                            static_cast<Impl const *>(this)->schedule(ref, message, std::forward<Args>(args) ...);
+                            static_cast<Impl const *>(this)->schedule(message, std::forward<Args>(args) ...);
                         }, std::move(args));
                     });
-                } else if constexpr (!seastar::is_future<ret_type>::value) {
-                    return seastar::futurize<ret_type>::apply([this, message, &args]() mutable {
+                } else if constexpr (!seastar::is_future<Return>::value) {
+                    return seastar::futurize<Return>::apply([this, message, &args]() mutable {
                         return std::apply([this, message](auto &&... args) {
-                            return static_cast<Impl const *>(this)->schedule(ref, message,
-                                                                             std::forward<Args>(args) ...);
+                            return static_cast<Impl const *>(this)->schedule(message, std::forward<Args>(args) ...);
                         }, std::move(args));
                     });
                 } else {
                     return std::apply([this, message](auto &&... args) {
-                        return static_cast<Impl const *>(this)->schedule(ref, message, std::forward<Args>(args) ...);
+                        return static_cast<Impl const *>(this)->schedule(message, std::forward<Args>(args) ...);
                     }, std::move(args));
                 }
             }();
@@ -68,47 +70,49 @@ namespace ultramarine {
         template<typename Handler>
         constexpr auto tell(Handler message) const {
             using Actor = typename Impl::ActorType;
-            using ret_type = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor)>;
+            using Return = std::result_of_t<decltype(vtable<Actor>::table[message])(Actor)>;
+            using Key = ActorKey<typename Impl::ActorType>;
 
-            if constexpr (std::is_void<ret_type>::value) {
-                return seastar::futurize<ret_type>::apply([this, message] {
-                    static_cast<Impl const *>(this)->schedule(ref, message);
+            if constexpr (std::is_void<Return>::value) {
+                return seastar::futurize<Return>::apply([this, message] {
+                    static_cast<Impl const *>(this)->schedule(message);
                 });
-            } else if constexpr (!seastar::is_future<ret_type>::value) {
-                return seastar::futurize<ret_type>::apply([this, message] {
-                    return static_cast<Impl const *>(this)->schedule(ref, message);
+            } else if constexpr (!seastar::is_future<Return>::value) {
+                return seastar::futurize<Return>::apply([this, message] {
+                    return static_cast<Impl const *>(this)->schedule(message);
                 });
             } else {
-                return static_cast<Impl const *>(this)->schedule(ref, message);
+                return static_cast<Impl const *>(this)->schedule(message);
             }
         };
     };
 
     template<typename Actor>
     class collocated_actor_ref : public actor_ref_impl<collocated_actor_ref<Actor>> {
+        ActorKey<Actor> key;
         seastar::shard_id loc;
 
     public:
         using ActorType = Actor;
 
-        explicit constexpr collocated_actor_ref(actor_id ref, seastar::shard_id loc)
-                : actor_ref_impl<collocated_actor_ref<Actor>>{ref}, loc(loc) {}
+        explicit constexpr collocated_actor_ref(ActorKey<Actor> &&k, std::size_t hash, seastar::shard_id loc):
+            actor_ref_impl<collocated_actor_ref<Actor>>(hash), key(k), loc(loc) {}
 
         using actor_ref_impl<collocated_actor_ref>::tell;
 
         template<typename Handler>
-        inline constexpr auto schedule(actor_id id, Handler message) const {
-            return seastar::smp::submit_to(loc, [id, message] {
-                return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])();
+        inline constexpr auto schedule(Handler message) const {
+            return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message] {
+                return (hold_activation<Actor>(k, h)->*vtable<Actor>::table[message])();
             });
         }
 
         template<typename Handler, typename ...Args>
-        inline constexpr auto schedule(actor_id id, Handler message, Args &&... args) const {
-            return seastar::smp::submit_to(loc, [id, message, args = std::make_tuple(
+        inline constexpr auto schedule(Handler message, Args &&... args) const {
+            return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message, args = std::make_tuple(
                     std::forward<Args>(args) ...)]() mutable {
-                return std::apply([id, message](auto &&... args) {
-                    return (hold_activation<Actor>(id)->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
+                return std::apply([&k, h, message](auto &&... args) {
+                    return (hold_activation<Actor>(k, h)->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
                 }, std::move(args));
             });
         }
@@ -116,22 +120,25 @@ namespace ultramarine {
 
     template<typename Actor>
     class local_actor_ref : public actor_ref_impl<local_actor_ref<Actor>> {
+        ActorKey<Actor> key;
         Actor *inst = nullptr;
 
     public:
         using ActorType = Actor;
 
-        explicit constexpr local_actor_ref(actor_id id) : actor_ref_impl<local_actor_ref<Actor>>{id},
-                                                inst(hold_activation<Actor>(id)) {};
+        explicit constexpr local_actor_ref(ActorKey<Actor> &&k, std::size_t hash) :
+            actor_ref_impl<local_actor_ref<Actor>>{hash}, key(std::forward<ActorKey<Actor>>(k)),
+            inst(hold_activation<Actor>(key, hash)) {};
+
         using actor_ref_impl<local_actor_ref<Actor>>::tell;
 
         template<typename Handler>
-        inline constexpr auto schedule(actor_id, Handler message) const {
+        inline constexpr auto schedule(Handler message) const {
             return (inst->*vtable<Actor>::table[message])();
         }
 
         template<typename Handler, typename ...Args>
-        inline constexpr auto schedule(actor_id, Handler message, Args &&... args) const {
+        inline constexpr auto schedule(Handler message, Args &&... args) const {
             return (inst->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
         }
     };
@@ -142,12 +149,13 @@ namespace ultramarine {
     class actor_directory {
     public:
         template<typename Actor>
-        [[nodiscard]] static constexpr actor_ref_variant<Actor> locate(actor_id id) noexcept {
-            auto shard = id % seastar::smp::count;
+        [[nodiscard]] static constexpr actor_ref_variant<Actor> locate(ActorKey<Actor> &&key) noexcept {
+            auto hash = std::hash<ActorKey<Actor>>{}(key);
+            auto shard = hash % seastar::smp::count;
             if (shard == seastar::engine().cpu_id()) {
-                return local_actor_ref<Actor>(id);
+                return local_actor_ref<Actor>(std::forward<ActorKey<Actor>>(key), hash);
             } else {
-                return collocated_actor_ref<Actor>(id, shard);
+                return collocated_actor_ref<Actor>(std::forward<ActorKey<Actor>>(key), hash, shard);
             }
         }
     };
@@ -157,7 +165,8 @@ namespace ultramarine {
         actor_ref_variant<Actor> impl;
     public:
 
-        explicit constexpr actor_ref(actor_id id) : impl(actor_directory::locate<Actor>(id)) {}
+        explicit constexpr actor_ref(ActorKey <Actor> &&key) :
+                impl(actor_directory::locate<Actor>(std::forward<ActorKey<Actor>>(key))) {}
 
         explicit constexpr actor_ref(local_actor_ref<Actor> &ref) : impl(ref) {};
 
@@ -168,7 +177,7 @@ namespace ultramarine {
         constexpr actor_ref(actor_ref &&) noexcept = default;
 
         template<typename Func>
-        inline constexpr auto visit(Func &&func)  const noexcept {
+        inline constexpr auto visit(Func &&func) const noexcept {
             return std::visit([func = std::forward<Func>(func)](auto &impl) mutable {
                 return func(impl);
             }, impl);
@@ -194,7 +203,7 @@ namespace ultramarine {
     };
 
     template<typename Actor>
-    [[nodiscard]] constexpr inline actor_ref<Actor> get(actor_id id) noexcept {
-        return actor_ref<Actor>(id);
+    [[nodiscard]] constexpr inline actor_ref<Actor> get(ActorKey<Actor> &&key) noexcept {
+        return actor_ref<Actor>(std::forward<ActorKey<Actor>>(key));
     }
 }

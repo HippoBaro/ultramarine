@@ -30,26 +30,27 @@
 
 namespace ultramarine {
 
-    using actor_id = unsigned int;
+    using actor_id = std::size_t;
     using actor_activation_id = unsigned int;
 
     class actor : private boost::noncopyable {
-        const actor_id id;
-
     public:
-        explicit actor(actor_id id) : id(id) { }
+        using KeyType = actor_id;
     };
 
     template <typename ActorKind>
     using directory = std::unordered_map<actor_id, ActorKind>;
 
+    template <typename Actor>
+    using ActorKey = typename Actor::KeyType;
+
     template<typename Actor>
-    [[nodiscard]] constexpr Actor *hold_activation(actor_id id) {
+    [[nodiscard]] constexpr Actor *hold_activation(ActorKey<Actor> const& key, actor_id id) {
         if (!Actor::directory) [[unlikely]] {
             Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
         }
 
-        auto r = std::get<0>(Actor::directory->try_emplace(id, id));
+        auto r = std::get<0>(Actor::directory->try_emplace(id, key));
         return &(std::get<1>(*r));
     }
 }
