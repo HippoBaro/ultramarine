@@ -72,5 +72,5 @@ before_script:
 
 script:
 - ninja -j`nproc --all`
-- ninja tests -j`nproc --all`
+- ninja ultramarine-tests -j`nproc --all`
 - ctest .
