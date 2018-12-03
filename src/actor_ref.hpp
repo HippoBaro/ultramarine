@@ -89,15 +89,15 @@ namespace ultramarine {
 
     template<typename Actor>
     class collocated_actor_ref : public actor_ref_impl<collocated_actor_ref<Actor>> {
-        ActorKey<Actor> key;
+        ActorKey <Actor> key;
         seastar::shard_id loc;
 
     public:
         using ActorType = Actor;
 
-        template <typename KeyType>
+        template<typename KeyType>
         explicit constexpr collocated_actor_ref(KeyType &&k, std::size_t hash, seastar::shard_id loc):
-            actor_ref_impl<collocated_actor_ref<Actor>>(hash), key(std::forward<KeyType>(k)), loc(loc) {}
+                actor_ref_impl<collocated_actor_ref<Actor>>(hash), key(std::forward<KeyType>(k)), loc(loc) {}
 
         using actor_ref_impl<collocated_actor_ref>::tell;
 
@@ -121,16 +121,16 @@ namespace ultramarine {
 
     template<typename Actor>
     class local_actor_ref : public actor_ref_impl<local_actor_ref<Actor>> {
-        ActorKey<Actor> key;
+        ActorKey <Actor> key;
         Actor *inst = nullptr;
 
     public:
         using ActorType = Actor;
 
-        template <typename KeyType>
+        template<typename KeyType>
         explicit constexpr local_actor_ref(KeyType &&k, std::size_t hash) :
-            actor_ref_impl<local_actor_ref<Actor>>{hash}, key(std::forward<KeyType>(k)),
-            inst(hold_activation<Actor>(key, hash)) {};
+                actor_ref_impl<local_actor_ref<Actor>>{hash}, key(std::forward<KeyType>(k)),
+                inst(hold_activation<Actor>(key, hash)) {};
 
         using actor_ref_impl<local_actor_ref<Actor>>::tell;
 
@@ -167,7 +167,7 @@ namespace ultramarine {
         actor_ref_variant<Actor> impl;
     public:
 
-        template <typename KeyType>
+        template<typename KeyType>
         explicit constexpr actor_ref(KeyType &&key) :
                 impl(actor_directory::locate<Actor>(std::forward<KeyType>(key))) {}
 
@@ -207,6 +207,8 @@ namespace ultramarine {
 
     template<typename Actor, typename KeyType>
     [[nodiscard]] constexpr inline actor_ref<Actor> get(KeyType &&key) noexcept {
+        static_assert(std::is_constructible<ActorKey < Actor>,
+                      KeyType &&>::value, "The provided key is not compatible with the Actor");
         return actor_ref<Actor>(std::forward<KeyType>(key));
     }
 }
