@@ -76,3 +76,19 @@ SEASTAR_THREAD_TEST_CASE (key_value_rvref_string_preserved) {
 
     BOOST_CHECK(counterActor.tell(string_actor::message::get_key()).get0() == "test-actor-string-key");
 }
+
+SEASTAR_THREAD_TEST_CASE (key_value_lvref_litteral_preserved) {
+    auto key = "test-actor-string-key";
+    auto counterActor = ultramarine::get<string_actor>(key);
+    key = "test-actor-string-key2";
+
+    BOOST_CHECK(counterActor.tell(string_actor::message::get_key()).get0() == "test-actor-string-key");
+}
+
+SEASTAR_THREAD_TEST_CASE (key_value_lvref_string_preserved) {
+    auto key = std::string("test-actor-string-key");
+    auto counterActor = ultramarine::get<string_actor>(key);
+    key = std::string("test-actor-string-key2");
+
+    BOOST_CHECK(counterActor.tell(string_actor::message::get_key()).get0() == "test-actor-string-key");
+}
