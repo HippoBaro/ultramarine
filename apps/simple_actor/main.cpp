@@ -28,14 +28,15 @@
 #include "actor_ref.hpp"
 #include "macro.hpp"
 
-class simple_actor : ultramarine::actor {
-    seastar::future<> say_hello() {
-        seastar::print("Hello, World; from simple_actor (%zu bytes) located on core %u.\n", sizeof(simple_actor),
+class simple_actor : public ultramarine::actor {
+
+    seastar::future<> say_hello() const {
+        seastar::print("Hello, World; from simple_actor %s (%zu bytes) located on core %u.\n", key, sizeof(simple_actor),
                        seastar::engine().cpu_id());
         return seastar::make_ready_future();
     }
 
-    ULTRAMARINE_DEFINE_ACTOR(simple_actor, (say_hello));
+    ULTRAMARINE_DEFINE_ACTOR(std::string, simple_actor, (say_hello));
 };
 ULTRAMARINE_IMPLEMENT_ACTOR(simple_actor);
 
@@ -52,7 +53,7 @@ int main(int ac, char **av) {
                 });
             });
 
-            return ultramarine::get<simple_actor>(0).tell(simple_actor::message::say_hello());
+            return ultramarine::get<simple_actor>("Ultra").tell(simple_actor::message::say_hello());
         });
     });
 }
