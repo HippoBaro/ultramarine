@@ -14,3 +14,7 @@ find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 add_ultramarine_test(NAME test-message_passing
         SUITE
         SOURCES message_passing.cpp)
+
+add_ultramarine_test(NAME test-actor_keys
+        SUITE
+        SOURCES actor_keys.cpp)
