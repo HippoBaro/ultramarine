@@ -33,16 +33,29 @@ namespace ultramarine {
     using actor_id = std::size_t;
     using actor_activation_id = unsigned int;
 
-    class actor : private boost::noncopyable {
-    public:
-        using KeyType = actor_id;
-    };
-
-    template <typename ActorKind>
-    using directory = std::unordered_map<actor_id, ActorKind>;
+    template <typename Actor>
+    using directory = std::unordered_map<actor_id, Actor>;
 
     template <typename Actor>
     using ActorKey = typename Actor::KeyType;
+
+    enum class ActorKind {
+        SingletonActor,
+        LocalActor
+    };
+
+    class actor : private boost::noncopyable {
+    public:
+        using KeyType = actor_id;
+        static constexpr auto kind = ActorKind::SingletonActor;
+    };
+
+    template <std::size_t MaxLocalActivations = std::numeric_limits<std::size_t>::max()>
+    class local_actor : public actor {
+    public:
+        static constexpr std::size_t max_activations = MaxLocalActivations;
+        static constexpr auto kind = ActorKind::LocalActor;
+    };
 
     template<typename Actor>
     [[nodiscard]] constexpr Actor *hold_activation(ActorKey<Actor> const& key, actor_id id) {

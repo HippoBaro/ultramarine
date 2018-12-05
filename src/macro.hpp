@@ -35,6 +35,37 @@
 #define ULTRAMARINE_MAKE_TUPLE(a, data, i, name)                                                            \
     boost::hana::make_pair(name(), &data::name),                                                            \
 
+#define ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                            \
+private:                                                                                                    \
+      const KeyType key;                                                                                    \
+public:                                                                                                     \
+      explicit name(KeyType key) : key(std::move(key)) { }                                                  \
+      struct message {                                                                                      \
+          BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG, name, seq)                                          \
+private:                                                                                                    \
+      friend class ultramarine::vtable<name>;                                                               \
+      static constexpr auto make_vtable() {                                                                 \
+        return boost::hana::make_map(                                                                       \
+            BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                                      \
+            boost::hana::make_pair(BOOST_HANA_STRING("dummy"), nullptr)                                     \
+        );                                                                                                  \
+      }                                                                                                     \
+};                                                                                                          \
+static thread_local std::unique_ptr<ultramarine::directory<name>> directory;                                \
+
+#define ULTRAMARINE_DEFINE_ACTOR2(name, seq)                                                                \
+public:                                                                                                     \
+      using KeyType = typename ultramarine::actor::KeyType;                                                 \
+ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                                    \
+
+#define ULTRAMARINE_DEFINE_ACTOR3(keytype, name, seq)                                                       \
+public:                                                                                                     \
+      using KeyType = keytype;                                                                              \
+ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                                    \
+
+#define ULTRAMARINE_GET_MACRO(_1, _2, _3, NAME, ...) NAME
+
+
 /*
     Example:
         ULTRAMARINE_DEFINE_ACTOR(simple_actor, (method1)(method2))
@@ -63,40 +94,17 @@ private:
     };
     static thread_local std::unique_ptr<ultramarine::directory<simple_actor>> directory;
  */
-#define ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                            \
-private:                                                                                                    \
-      const KeyType key;                                                                                    \
-public:                                                                                                     \
-      explicit name(KeyType const& key) : key(key) { }                                                      \
-      struct message {                                                                                      \
-          BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG, name, seq)                                          \
-private:                                                                                                    \
-      friend class ultramarine::actor_ref<name>;                                                            \
-      friend class ultramarine::vtable<name>;                                                               \
-      static constexpr auto make_vtable() {                                                                 \
-        return boost::hana::make_map(                                                                       \
-            BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                                      \
-            boost::hana::make_pair(BOOST_HANA_STRING("dummy"), nullptr)                                     \
-        );                                                                                                  \
-      }                                                                                                     \
-};                                                                                                          \
-static thread_local std::unique_ptr<ultramarine::directory<name>> directory;                                \
-
-#define ULTRAMARINE_DEFINE_ACTOR2(name, seq)                                                                \
-public:                                                                                                     \
-      using KeyType = typename ultramarine::actor::KeyType;                                                 \
-ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                                    \
-
-#define ULTRAMARINE_DEFINE_ACTOR3(keytype, name, seq)                                                       \
-public:                                                                                                     \
-      using KeyType = keytype;                                                                              \
-ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                                    \
-
-#define ULTRAMARINE_GET_MACRO(_1, _2, _3, NAME, ...) NAME
-
 #define ULTRAMARINE_DEFINE_ACTOR(...)                                                                       \
-ULTRAMARINE_GET_MACRO(__VA_ARGS__, ULTRAMARINE_DEFINE_ACTOR3, ULTRAMARINE_DEFINE_ACTOR2)(__VA_ARGS__)
+ULTRAMARINE_GET_MACRO(__VA_ARGS__, ULTRAMARINE_DEFINE_ACTOR3, ULTRAMARINE_DEFINE_ACTOR2)(__VA_ARGS__)       \
+
+#define ULTRAMARINE_DEFINE_LOCAL_ACTOR(...)                                                                 \
+ULTRAMARINE_GET_MACRO(__VA_ARGS__, ULTRAMARINE_DEFINE_ACTOR3, ULTRAMARINE_DEFINE_ACTOR2)(__VA_ARGS__)       \
+static thread_local std::size_t round_robin_counter;                                                        \
 
 #define ULTRAMARINE_IMPLEMENT_ACTOR(name)                                                                   \
     thread_local std::unique_ptr<ultramarine::directory<name>> name::directory;                             \
+
+#define ULTRAMARINE_IMPLEMENT_LOCAL_ACTOR(name)                                                             \
+    thread_local std::unique_ptr<ultramarine::directory<name>> name::directory;                             \
+    thread_local std::size_t name::round_robin_counter = 0;                                                 \
 

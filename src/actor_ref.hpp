@@ -146,11 +146,12 @@ namespace ultramarine {
     template<typename Actor>
     using actor_ref_variant = std::variant<local_actor_ref<Actor>, collocated_actor_ref<Actor>>;
 
-    class actor_directory {
-    public:
+    struct actor_directory {
         template<typename Actor, typename KeyType>
         [[nodiscard]] static constexpr actor_ref_variant<Actor> locate(KeyType &&key) noexcept {
-            auto hash = std::hash<ActorKey<Actor>>{}(key);
+            auto hash = std::hash<ActorKey < Actor>>
+            {}
+            (key);
             auto shard = hash % seastar::smp::count;
             if (shard == seastar::engine().cpu_id()) {
                 return local_actor_ref<Actor>(std::forward<KeyType>(key), hash);
@@ -160,8 +161,12 @@ namespace ultramarine {
         }
     };
 
-    template<typename Actor>
+    template<typename Actor, ActorKind = Actor::kind>
     class actor_ref {
+    };
+
+    template<typename Actor>
+    class actor_ref<Actor, ActorKind::SingletonActor> {
         actor_ref_variant<Actor> impl;
     public:
 
@@ -169,9 +174,9 @@ namespace ultramarine {
         explicit constexpr actor_ref(KeyType &&key) :
                 impl(actor_directory::locate<Actor>(std::forward<KeyType>(key))) {}
 
-        explicit constexpr actor_ref(local_actor_ref<Actor> &ref) : impl(ref) {};
+        explicit constexpr actor_ref(local_actor_ref<Actor> const &ref) : impl(ref) {};
 
-        explicit constexpr actor_ref(collocated_actor_ref<Actor> &ref) : impl(ref) {};
+        explicit constexpr actor_ref(collocated_actor_ref<Actor> const &ref) : impl(ref) {};
 
         constexpr actor_ref(actor_ref const &) = default;
 
@@ -179,9 +184,52 @@ namespace ultramarine {
 
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
-            return std::visit([func = std::forward<Func>(func)](auto &impl) mutable {
+            return std::visit([func = std::forward<Func>(func)](auto const &impl) mutable {
                 return func(impl);
             }, impl);
+        }
+
+        template<typename Handler, typename ...Args>
+        constexpr auto inline tell(Handler message, Args &&... args) const {
+            return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
+                return visit([message, &args](auto &&impl) {
+                    return std::apply([&impl, message](Args &&... args) {
+                        return impl.tell(message, std::forward<Args>(args) ...);
+                    }, std::move(args));
+                });
+            }();
+        }
+
+        template<typename Handler>
+        constexpr auto inline tell(Handler message) const {
+            return visit([message](auto &&impl) {
+                return impl.tell(message);
+            });
+        };
+    };
+
+    template<typename Actor>
+    class actor_ref<Actor, ActorKind::LocalActor> {
+        ActorKey <Actor> key;
+
+    public:
+
+        template<typename KeyType>
+        explicit constexpr actor_ref(KeyType &&key) : key(std::forward<KeyType>(key)) {}
+
+        constexpr actor_ref(actor_ref const &) = default;
+
+        constexpr actor_ref(actor_ref &&) noexcept = default;
+
+        template<typename Func>
+        inline constexpr auto visit(Func &&func) const noexcept {
+            auto next = (Actor::round_robin_counter++ + seastar::engine().cpu_id())
+                    % seastar::smp::count % Actor::max_activations;
+            if (next == seastar::engine().cpu_id()) {
+                return func(local_actor_ref<Actor>(key, next));
+            } else {
+                return func(collocated_actor_ref<Actor>(key, next, next));
+            }
         }
 
         template<typename Handler, typename ...Args>
