@@ -146,12 +146,17 @@ namespace ultramarine {
     template<typename Actor>
     using actor_ref_variant = std::variant<local_actor_ref<Actor>, collocated_actor_ref<Actor>>;
 
+    template<typename Actor>
     struct actor_directory {
-        template<typename Actor, typename KeyType>
+
+        template<typename KeyType>
+        [[nodiscard]] static constexpr auto hash_key(KeyType &&key) noexcept {
+            return std::hash<ActorKey<Actor>>{}(key);
+        }
+
+        template<typename KeyType>
         [[nodiscard]] static constexpr actor_ref_variant<Actor> locate(KeyType &&key) noexcept {
-            auto hash = std::hash<ActorKey < Actor>>
-            {}
-            (key);
+            auto hash = hash_key(std::forward<KeyType>(key));
             auto shard = hash % seastar::smp::count;
             if (shard == seastar::engine().cpu_id()) {
                 return local_actor_ref<Actor>(std::forward<KeyType>(key), hash);
@@ -162,8 +167,7 @@ namespace ultramarine {
     };
 
     template<typename Actor, ActorKind = Actor::kind>
-    class actor_ref {
-    };
+    class actor_ref { };
 
     template<typename Actor>
     class actor_ref<Actor, ActorKind::SingletonActor> {
@@ -172,7 +176,7 @@ namespace ultramarine {
 
         template<typename KeyType>
         explicit constexpr actor_ref(KeyType &&key) :
-                impl(actor_directory::locate<Actor>(std::forward<KeyType>(key))) {}
+                impl(actor_directory<Actor>::locate(std::forward<KeyType>(key))) {}
 
         explicit constexpr actor_ref(local_actor_ref<Actor> const &ref) : impl(ref) {};
 
@@ -226,9 +230,9 @@ namespace ultramarine {
             auto next = (Actor::round_robin_counter++ + seastar::engine().cpu_id())
                     % seastar::smp::count % Actor::max_activations;
             if (next == seastar::engine().cpu_id()) {
-                return func(local_actor_ref<Actor>(key, next));
+                return func(local_actor_ref<Actor>(key, actor_directory<Actor>::hash_key(key)));
             } else {
-                return func(collocated_actor_ref<Actor>(key, next, next));
+                return func(collocated_actor_ref<Actor>(key, actor_directory<Actor>::hash_key(key), next));
             }
         }
 
