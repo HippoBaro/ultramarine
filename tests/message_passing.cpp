@@ -48,7 +48,7 @@ struct no_copy_message {
     };
 };
 
-class counter_actor : ultramarine::actor {
+class counter_actor : public ultramarine::actor {
 public:
     int counter = 0;
 

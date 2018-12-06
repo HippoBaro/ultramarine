@@ -27,7 +27,7 @@
 #include "actor_ref.hpp"
 #include "macro.hpp"
 
-class counter_actor : ultramarine::actor {
+class counter_actor : public ultramarine::actor {
 public:
     volatile int counter = 0;
 
