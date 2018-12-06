@@ -39,3 +39,6 @@ add_ultramarine_test(NAME test-message_passing
 
 add_ultramarine_test(NAME test-actor_keys
         SOURCES actor_keys.cpp)
+
+add_ultramarine_test(NAME test-local_actor
+        SOURCES local_actor.cpp)
