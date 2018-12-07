@@ -228,7 +228,7 @@ namespace ultramarine {
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
             auto next = (Actor::round_robin_counter++ + seastar::engine().cpu_id())
-                    % seastar::smp::count % Actor::max_activations;
+                    % (seastar::smp::count < Actor::max_activations ? seastar::smp::count : Actor::max_activations);
             if (next == seastar::engine().cpu_id()) {
                 return func(local_actor_ref<Actor>(key, actor_directory<Actor>::hash_key(key)));
             } else {
