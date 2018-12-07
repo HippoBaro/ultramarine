@@ -32,10 +32,9 @@
 class actor1 : public ultramarine::local_actor<1> {
     volatile int i = 0;
 
-    seastar::future<> stall() {
-        while (i < std::numeric_limits<int>::max() / 5) i++;
+    void stall() {
+        while (i < std::numeric_limits<int>::max() / 10) i++;
         i = 0;
-        return seastar::make_ready_future();
     }
 
 ULTRAMARINE_DEFINE_LOCAL_ACTOR(actor1, (stall))
@@ -47,7 +46,7 @@ class actor2 : public ultramarine::local_actor<> {
     volatile int i = 0;
 
     void stall() {
-        while (i < std::numeric_limits<int>::max() / 5) i++;
+        while (i < std::numeric_limits<int>::max() / 10) i++;
         i = 0;
     }
 
@@ -63,6 +62,8 @@ using namespace seastar;
  */
 
 SEASTAR_THREAD_TEST_CASE (local_actor_scheduling) {
+    BOOST_WARN(seastar::smp::count > 1);
+
     auto counterActor1 = ultramarine::get<actor1>(0);
 
     auto start1 = std::chrono::steady_clock::now();
@@ -88,6 +89,4 @@ SEASTAR_THREAD_TEST_CASE (local_actor_scheduling) {
     auto time2 = std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2);
 
     BOOST_CHECK(float(time1.count()) / time2.count() > 1.5f);
-
-    //BOOST_CHECK();
 }
