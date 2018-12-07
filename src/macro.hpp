@@ -27,10 +27,10 @@
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/hana.hpp>
 
-#define ULTRAMARINE_LITERAL(lit) #lit                                                                       \
+#define ULTRAMARINE_LITERAL(lit) #lit
 
 #define ULTRAMARINE_MAKE_TAG(a, b, i, tag)                                                                  \
-    static constexpr auto tag() { return BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)); }                     \
+static constexpr auto tag() { return BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)); }
 
 #define ULTRAMARINE_MAKE_TUPLE(a, data, i, name)                                                            \
     boost::hana::make_pair(name(), &data::name),                                                            \
@@ -51,17 +51,17 @@ private:                                                                        
         );                                                                                                  \
       }                                                                                                     \
 };                                                                                                          \
-static thread_local std::unique_ptr<ultramarine::directory<name>> directory;                                \
+static thread_local std::unique_ptr<ultramarine::directory<name>> directory;
 
 #define ULTRAMARINE_DEFINE_ACTOR2(name, seq)                                                                \
 public:                                                                                                     \
       using KeyType = typename ultramarine::actor::KeyType;                                                 \
-ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                                    \
+ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)
 
 #define ULTRAMARINE_DEFINE_ACTOR3(keytype, name, seq)                                                       \
 public:                                                                                                     \
       using KeyType = keytype;                                                                              \
-ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                                    \
+ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)
 
 #define ULTRAMARINE_GET_MACRO(_1, _2, _3, NAME, ...) NAME
 
@@ -96,15 +96,22 @@ private:
  */
 #define ULTRAMARINE_DEFINE_ACTOR(...)                                                                       \
 ULTRAMARINE_GET_MACRO(__VA_ARGS__, ULTRAMARINE_DEFINE_ACTOR3, ULTRAMARINE_DEFINE_ACTOR2)(__VA_ARGS__)       \
+static_assert(kind == ultramarine::ActorKind::SingletonActor,                                               \
+        "Trying to register an actor type that doesn't inherit from actor base class");
 
 #define ULTRAMARINE_DEFINE_LOCAL_ACTOR(...)                                                                 \
 ULTRAMARINE_GET_MACRO(__VA_ARGS__, ULTRAMARINE_DEFINE_ACTOR3, ULTRAMARINE_DEFINE_ACTOR2)(__VA_ARGS__)       \
 static thread_local std::size_t round_robin_counter;                                                        \
+static_assert(kind == ultramarine::ActorKind::LocalActor,                                                   \
+        "Trying to register a local actor type that doesn't inherit from local_actor base class");
 
 #define ULTRAMARINE_IMPLEMENT_ACTOR(name)                                                                   \
-    thread_local std::unique_ptr<ultramarine::directory<name>> name::directory;                             \
+thread_local std::unique_ptr<ultramarine::directory<name>> name::directory;                                 \
+static_assert(name::kind == ultramarine::ActorKind::SingletonActor,                                         \
+        "Trying to implement an actor type that doesn't inherit from actor base class");
 
 #define ULTRAMARINE_IMPLEMENT_LOCAL_ACTOR(name)                                                             \
-    thread_local std::unique_ptr<ultramarine::directory<name>> name::directory;                             \
-    thread_local std::size_t name::round_robin_counter = 0;                                                 \
-
+thread_local std::unique_ptr<ultramarine::directory<name>> name::directory;                                 \
+thread_local std::size_t name::round_robin_counter = 0;                                                     \
+static_assert(name::kind == ultramarine::ActorKind::LocalActor,                                             \
+        "Trying to implement a local actor type that doesn't inherit from local_actor base class");
