@@ -47,7 +47,7 @@ private:                                                                        
       static constexpr auto make_vtable() {                                                                 \
         return boost::hana::make_map(                                                                       \
             BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                                      \
-            boost::hana::make_pair(BOOST_HANA_STRING("dummy"), nullptr)                                     \
+            boost::hana::make_pair(BOOST_HANA_STRING("ultramarine_dummy"), nullptr)                         \
         );                                                                                                  \
       }                                                                                                     \
 };                                                                                                          \
