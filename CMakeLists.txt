@@ -14,9 +14,10 @@ add_subdirectory (third-party)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(ultramarine-actor INTERFACE)
 target_link_libraries(ultramarine-actor INTERFACE Seastar::seastar)
-target_include_directories(ultramarine-actor INTERFACE src)
+target_include_directories(ultramarine-actor
+        INTERFACE include src
+        )
 add_library (Ultramarine::actor ALIAS ultramarine-actor)
-
 
 # Apps
 if (${ULTRAMARINE_BUILD_APPS})

@@ -26,8 +26,8 @@
 
 #include <chrono>
 #include <numeric>
-#include "core/app-template.hh"
-#include "silo.hpp"
+#include <core/app-template.hh>
+#include <ultramarine/silo.hpp>
 
 #define ULTRAMARINE_BENCH(name) {#name, name}
 

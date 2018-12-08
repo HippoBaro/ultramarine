@@ -25,9 +25,8 @@
 #include <numeric>
 #include <tests/test-utils.hh>
 #include <core/thread.hh>
-#include "actor.hpp"
-#include "actor_ref.hpp"
-#include "macro.hpp"
+#include <ultramarine/actor.hpp>
+#include <ultramarine/actor_ref.hpp>
 
 class actor1 : public ultramarine::local_actor<1> {
     volatile int i = 0;

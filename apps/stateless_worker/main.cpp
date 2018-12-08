@@ -22,12 +22,10 @@
  * SOFTWARE.
  */
 
-#include <core/sleep.hh>
-#include "core/app-template.hh"
-#include "silo.hpp"
-#include "actor.hpp"
-#include "actor_ref.hpp"
-#include "macro.hpp"
+#include <core/app-template.hh>
+#include <ultramarine/silo.hpp>
+#include <ultramarine/actor.hpp>
+#include <ultramarine/actor_ref.hpp>
 
 class worker : public ultramarine::local_actor<3> {
 public:

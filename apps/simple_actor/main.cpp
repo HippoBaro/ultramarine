@@ -23,10 +23,9 @@
  */
 
 #include "core/app-template.hh"
-#include "silo.hpp"
-#include "actor.hpp"
-#include "actor_ref.hpp"
-#include "macro.hpp"
+#include <ultramarine/silo.hpp>
+#include <ultramarine/actor.hpp>
+#include <ultramarine/actor_ref.hpp>
 
 class simple_actor : public ultramarine::actor {
 

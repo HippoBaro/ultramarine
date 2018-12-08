@@ -24,46 +24,29 @@
 
 #pragma once
 
-#include <memory>
-#include <unordered_map>
-#include <boost/core/noncopyable.hpp>
+#include "core/distributed.hh"
+#include "core/future.hh"
 
 namespace ultramarine {
-
-    using actor_id = std::size_t;
-    using actor_activation_id = unsigned int;
-
-    template <typename Actor>
-    using directory = std::unordered_map<actor_id, Actor>;
-
-    template <typename Actor>
-    using ActorKey = typename Actor::KeyType;
-
-    enum class ActorKind {
-        SingletonActor,
-        LocalActor
-    };
-
-    class actor : private boost::noncopyable {
+    class silo {
     public:
-        using KeyType = actor_id;
-        static constexpr auto kind = ActorKind::SingletonActor;
+        seastar::future<> stop() {
+            return seastar::make_ready_future();
+        }
     };
 
-    template <std::size_t MaxLocalActivations = std::numeric_limits<std::size_t>::max()>
-    class local_actor : public actor {
+    class silo_server {
+    private:
+        std::unique_ptr<seastar::distributed<silo>> _service;
     public:
-        static constexpr std::size_t max_activations = MaxLocalActivations;
-        static constexpr auto kind = ActorKind::LocalActor;
-    };
+        silo_server() : _service(new seastar::distributed<silo>) { }
 
-    template<typename Actor>
-    [[nodiscard]] constexpr Actor *hold_activation(ActorKey<Actor> const& key, actor_id id) {
-        if (!Actor::directory) [[unlikely]] {
-            Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
+        seastar::future<> start() {
+            return _service->start();
         }
 
-        auto r = std::get<0>(Actor::directory->try_emplace(id, key));
-        return &(std::get<1>(*r));
-    }
+        seastar::future<> stop() {
+            return _service->stop();
+        }
+    };
 }

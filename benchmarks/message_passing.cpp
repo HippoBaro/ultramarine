@@ -22,10 +22,9 @@
  * SOFTWARE.
  */
 
+#include <ultramarine/actor.hpp>
+#include <ultramarine/actor_ref.hpp>
 #include "benchmark_utility.hpp"
-#include "actor.hpp"
-#include "actor_ref.hpp"
-#include "macro.hpp"
 
 class counter_actor : public ultramarine::actor {
 public:
