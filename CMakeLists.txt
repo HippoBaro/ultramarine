@@ -13,9 +13,9 @@ add_subdirectory (third-party)
 # Ultramarine
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(ultramarine
-        src/actor.cpp src/actor.hpp
-        src/silo.cpp src/silo.hpp
-        src/actor_ref.cpp src/actor_ref.hpp
+        src/actor.hpp
+        src/silo.hpp
+        src/actor_ref.hpp
         src/macro.hpp
         )
 target_link_libraries(ultramarine PUBLIC Seastar::seastar)
