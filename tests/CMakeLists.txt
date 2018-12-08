@@ -5,8 +5,8 @@ function(add_ultramarine_test)
     cmake_parse_arguments(args "${options}" "${one_value_args}" "${multi_value_args}" "${ARGN}")
 
     add_seastar_test(${ARGN})
-    target_link_libraries(${args_NAME} PRIVATE ultramarine)
-    target_link_libraries(${args_NAME}_g PRIVATE ultramarine)
+    target_link_libraries(${args_NAME} PRIVATE Ultramarine::actor)
+    target_link_libraries(${args_NAME}_g PRIVATE Ultramarine::actor)
     add_dependencies (ultramarine-tests ${args_NAME})
     add_dependencies (ultramarine-tests-debug ${args_NAME}_g)
 
