@@ -15,7 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(ultramarine-actor INTERFACE)
 target_link_libraries(ultramarine-actor INTERFACE Seastar::seastar)
 target_include_directories(ultramarine-actor
-        INTERFACE include src
+        INTERFACE include
         )
 add_library (Ultramarine::actor ALIAS ultramarine-actor)
 

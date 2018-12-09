@@ -24,7 +24,7 @@
 
 #pragma once
 
-namespace ultramarine {
+namespace ultramarine::impl {
     template<typename Actor>
     struct actor_directory {
 

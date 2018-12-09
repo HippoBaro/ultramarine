@@ -27,7 +27,7 @@
 #include "ultramarine/actor.hpp"
 #include "directory.hpp"
 
-namespace ultramarine {
+namespace ultramarine::impl {
     template<typename Impl>
     struct actor_ref_impl {
         std::size_t hash;

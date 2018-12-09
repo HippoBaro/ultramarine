@@ -27,7 +27,7 @@
 #include <variant>
 #include <core/reactor.hh>
 #include "actor.hpp"
-#include "actor_ref_impl.hpp"
+#include "impl/actor_ref_impl.hpp"
 
 namespace ultramarine {
 
@@ -36,16 +36,16 @@ namespace ultramarine {
 
     template<typename Actor>
     class actor_ref<Actor, ActorKind::SingletonActor> {
-        actor_ref_variant<Actor> impl;
+        impl::actor_ref_variant<Actor> impl;
     public:
 
         template<typename KeyType>
         explicit constexpr actor_ref(KeyType &&key) :
-                impl(make_actor_ref_impl<Actor>(std::forward<KeyType>(key))) {}
+                impl(impl::make_actor_ref_impl<Actor>(std::forward<KeyType>(key))) {}
 
-        explicit constexpr actor_ref(local_actor_ref<Actor> const &ref) : impl(ref) {};
+        explicit constexpr actor_ref(impl::local_actor_ref<Actor> const &ref) : impl(ref) {};
 
-        explicit constexpr actor_ref(collocated_actor_ref<Actor> const &ref) : impl(ref) {};
+        explicit constexpr actor_ref(impl::collocated_actor_ref<Actor> const &ref) : impl(ref) {};
 
         constexpr actor_ref(actor_ref const &) = default;
 
@@ -95,9 +95,9 @@ namespace ultramarine {
             auto next = (Actor::round_robin_counter++ + seastar::engine().cpu_id())
                     % (seastar::smp::count < Actor::max_activations ? seastar::smp::count : Actor::max_activations);
             if (next == seastar::engine().cpu_id()) {
-                return func(local_actor_ref<Actor>(key, actor_directory<Actor>::hash_key(key)));
+                return func(impl::local_actor_ref<Actor>(key, impl::actor_directory<Actor>::hash_key(key)));
             } else {
-                return func(collocated_actor_ref<Actor>(key, actor_directory<Actor>::hash_key(key), next));
+                return func(impl::collocated_actor_ref<Actor>(key, impl::actor_directory<Actor>::hash_key(key), next));
             }
         }
 
