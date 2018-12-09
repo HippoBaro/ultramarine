@@ -79,7 +79,7 @@ namespace ultramarine {
 
     template<typename Actor>
     class actor_ref<Actor, ActorKind::LocalActor> {
-        ActorKey <Actor> key;
+        const ActorKey <Actor> key;
 
     public:
 

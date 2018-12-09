@@ -30,7 +30,7 @@
 namespace ultramarine::impl {
     template<typename Impl>
     struct actor_ref_impl {
-        std::size_t hash;
+        const std::size_t hash;
 
         explicit constexpr actor_ref_impl(std::size_t hash) : hash(hash) {}
 
@@ -81,8 +81,8 @@ namespace ultramarine::impl {
 
     template<typename Actor>
     class collocated_actor_ref : public actor_ref_impl<collocated_actor_ref<Actor>> {
-        ActorKey <Actor> key;
-        seastar::shard_id loc;
+        const ActorKey <Actor> key;
+        const seastar::shard_id loc;
 
     public:
         using ActorType = Actor;
@@ -113,7 +113,7 @@ namespace ultramarine::impl {
 
     template<typename Actor>
     class local_actor_ref : public actor_ref_impl<local_actor_ref<Actor>> {
-        ActorKey <Actor> key;
+        const ActorKey <Actor> key;
         Actor *inst = nullptr;
 
     public:
