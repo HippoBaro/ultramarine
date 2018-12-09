@@ -1,18 +1,18 @@
 /*
  * MIT License
- * 
+ *
  * Copyright (c) 2018 Hippolyte Barraud
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,29 +24,22 @@
 
 #pragma once
 
-#include "core/distributed.hh"
-#include "core/future.hh"
-
 namespace ultramarine {
-    class silo {
-    public:
-        seastar::future<> stop() {
-            return seastar::make_ready_future();
-        }
-    };
+    template<typename Actor>
+    struct actor_directory {
 
-    class silo_server {
-    private:
-        std::unique_ptr<seastar::distributed<silo>> _service;
-    public:
-        silo_server() : _service(new seastar::distributed<silo>) { }
-
-        seastar::future<> start() {
-            return _service->start();
+        template<typename KeyType>
+        [[nodiscard]] static constexpr auto hash_key(KeyType &&key) noexcept {
+            return std::hash<ActorKey<Actor>>{}(key);
         }
 
-        seastar::future<> stop() {
-            return _service->stop();
+        [[nodiscard]] static constexpr Actor *hold_activation(ActorKey<Actor> const& key, actor_id id) {
+            if (!Actor::directory) [[unlikely]] {
+                Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
+            }
+
+            auto r = std::get<0>(Actor::directory->try_emplace(id, key));
+            return &(std::get<1>(*r));
         }
     };
 }

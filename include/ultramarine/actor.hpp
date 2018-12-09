@@ -27,7 +27,7 @@
 #include <memory>
 #include <unordered_map>
 #include <boost/core/noncopyable.hpp>
-#include "../../src/macro.hpp"
+#include "macro.hpp"
 
 namespace ultramarine {
 
@@ -39,6 +39,11 @@ namespace ultramarine {
 
     template <typename Actor>
     using ActorKey = typename Actor::KeyType;
+
+    template<typename Actor>
+    struct vtable {
+        static constexpr auto table = Actor::message::make_vtable();
+    };
 
     enum class ActorKind {
         SingletonActor,
@@ -57,14 +62,4 @@ namespace ultramarine {
         static constexpr std::size_t max_activations = MaxLocalActivations;
         static constexpr auto kind = ActorKind::LocalActor;
     };
-
-    template<typename Actor>
-    [[nodiscard]] constexpr Actor *hold_activation(ActorKey<Actor> const& key, actor_id id) {
-        if (!Actor::directory) [[unlikely]] {
-            Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
-        }
-
-        auto r = std::get<0>(Actor::directory->try_emplace(id, key));
-        return &(std::get<1>(*r));
-    }
 }
