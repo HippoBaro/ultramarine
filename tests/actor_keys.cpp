@@ -53,7 +53,10 @@ class string_actor : public ultramarine::actor {
         return key;
     }
 
-    ULTRAMARINE_DEFINE_ACTOR(std::string, string_actor, (get_key))
+public:
+    using KeyType = std::string;
+
+    ULTRAMARINE_DEFINE_ACTOR(string_actor, (get_key))
 };
 
 ULTRAMARINE_IMPLEMENT_ACTOR(string_actor);

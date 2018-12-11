@@ -27,8 +27,10 @@
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 
-class worker : public ultramarine::local_actor<3> {
+class worker : public ultramarine::local_actor {
 public:
+    static constexpr std::size_t max_activations = 3;
+
     void say_hello() const {
         seastar::print("Hello, World; from simple_actor %s (%zu bytes) located on core %u.\n", key, sizeof(worker),
                        seastar::engine().cpu_id());

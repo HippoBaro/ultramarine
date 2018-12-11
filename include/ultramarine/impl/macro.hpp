@@ -43,6 +43,7 @@ public:                                                                         
       struct message {                                                                                      \
           BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG, name, seq)                                          \
 private:                                                                                                    \
+      friend class ultramarine::actor_ref<name>;                                                            \
       friend class ultramarine::vtable<name>;                                                               \
       static constexpr auto make_vtable() {                                                                 \
         return boost::hana::make_map(                                                                       \
@@ -52,19 +53,6 @@ private:                                                                        
       }                                                                                                     \
 };                                                                                                          \
 static thread_local std::unique_ptr<ultramarine::directory<name>> directory;
-
-#define ULTRAMARINE_DEFINE_ACTOR2(name, seq)                                                                \
-public:                                                                                                     \
-      using KeyType = typename ultramarine::actor::KeyType;                                                 \
-ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)
-
-#define ULTRAMARINE_DEFINE_ACTOR3(keytype, name, seq)                                                       \
-public:                                                                                                     \
-      using KeyType = keytype;                                                                              \
-ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)
-
-#define ULTRAMARINE_GET_MACRO(_1, _2, _3, NAME, ...) NAME
-
 
 /*
     Example:
@@ -94,13 +82,13 @@ private:
     };
     static thread_local std::unique_ptr<ultramarine::directory<simple_actor>> directory;
  */
-#define ULTRAMARINE_DEFINE_ACTOR(...)                                                                       \
-ULTRAMARINE_GET_MACRO(__VA_ARGS__, ULTRAMARINE_DEFINE_ACTOR3, ULTRAMARINE_DEFINE_ACTOR2)(__VA_ARGS__)       \
+#define ULTRAMARINE_DEFINE_ACTOR(name, seq)                                                                 \
+ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                                    \
 static_assert(kind == ultramarine::ActorKind::SingletonActor,                                               \
         "Trying to register an actor type that doesn't inherit from actor base class");
 
-#define ULTRAMARINE_DEFINE_LOCAL_ACTOR(...)                                                                 \
-ULTRAMARINE_GET_MACRO(__VA_ARGS__, ULTRAMARINE_DEFINE_ACTOR3, ULTRAMARINE_DEFINE_ACTOR2)(__VA_ARGS__)       \
+#define ULTRAMARINE_DEFINE_LOCAL_ACTOR(name, seq)                                                                 \
+ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                                    \
 static thread_local std::size_t round_robin_counter;                                                        \
 static_assert(kind == ultramarine::ActorKind::LocalActor,                                                   \
         "Trying to register a local actor type that doesn't inherit from local_actor base class");
