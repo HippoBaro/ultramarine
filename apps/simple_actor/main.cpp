@@ -28,6 +28,8 @@
 #include <ultramarine/actor_ref.hpp>
 
 class simple_actor : public ultramarine::actor {
+public:
+    using KeyType = std::string;
 
     seastar::future<> say_hello() const {
         seastar::print("Hello, World; from simple_actor %s (%zu bytes) located on core %u.\n", key, sizeof(simple_actor),
@@ -35,7 +37,7 @@ class simple_actor : public ultramarine::actor {
         return seastar::make_ready_future();
     }
 
-    ULTRAMARINE_DEFINE_ACTOR(std::string, simple_actor, (say_hello));
+    ULTRAMARINE_DEFINE_ACTOR(simple_actor, (say_hello));
 };
 ULTRAMARINE_IMPLEMENT_ACTOR(simple_actor);
 
