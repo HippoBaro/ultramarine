@@ -31,7 +31,7 @@
 
 namespace ultramarine {
 
-    template<typename Actor, ActorKind = Actor::kind>
+    template<typename Actor, ActorKind = Actor::impl::kind>
     class actor_ref { };
 
     template<typename Actor>

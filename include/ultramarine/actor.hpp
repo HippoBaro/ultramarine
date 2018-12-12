@@ -53,13 +53,17 @@ namespace ultramarine {
     class actor : private boost::noncopyable {
     public:
         using KeyType = actor_id;
-        static constexpr ActorKind kind = ActorKind::SingletonActor;
         static constexpr bool reentrant = true;
+        struct impl {
+            static constexpr ActorKind kind = ActorKind::SingletonActor;
+        };
     };
 
     class local_actor : public actor {
     public:
         static constexpr std::size_t max_activations = std::numeric_limits<std::size_t>::max();
-        static constexpr ActorKind kind = ActorKind::LocalActor;
+        struct impl {
+            static constexpr ActorKind kind = ActorKind::LocalActor;
+        };
     };
 }
