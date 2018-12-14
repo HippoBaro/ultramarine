@@ -34,7 +34,8 @@ namespace ultramarine {
     }
 
     template<std::size_t ConcurrencyLimit = std::numeric_limits<std::size_t>::max()>
-    struct local_actor : public impl::local_actor {
+    struct local_actor : impl::local_actor {
+        static_assert(ConcurrencyLimit > 0, "Local actor concurrency limit must be a positive integer");
         static constexpr std::size_t max_activations = ConcurrencyLimit;
     };
 
