@@ -27,6 +27,7 @@
 #include <variant>
 #include <core/reactor.hh>
 #include "actor.hpp"
+#include "actor_traits.hpp"
 #include "impl/actor_ref_impl.hpp"
 
 namespace ultramarine {
@@ -95,7 +96,7 @@ namespace ultramarine {
         inline constexpr auto visit(Func &&func) const noexcept {
             std::size_t next = 0;
 
-            if constexpr (std::is_base_of_v<local_actor<>, Actor>) {
+            if constexpr (is_unlimited_concurrent_local_actor_v<Actor>) {
                 next = (Actor::round_robin_counter++ + seastar::engine().cpu_id()) % seastar::smp::count;
             } else {
                 next = (Actor::round_robin_counter++ + seastar::engine().cpu_id())
