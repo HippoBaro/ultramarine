@@ -28,22 +28,20 @@
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 
-class actor1 : public ultramarine::local_actor {
+class actor1 : public ultramarine::actor, public ultramarine::local_actor<1> {
     volatile int i = 0;
 
     void stall() {
         while (i < std::numeric_limits<int>::max() / 10) i++;
         i = 0;
     }
-public:
-    static constexpr std::size_t max_activations = 1;
 
 ULTRAMARINE_DEFINE_LOCAL_ACTOR(actor1, (stall))
 };
 
 ULTRAMARINE_IMPLEMENT_LOCAL_ACTOR(actor1);
 
-class actor2 : public ultramarine::local_actor {
+class actor2 : public ultramarine::actor, public ultramarine::local_actor<> {
     volatile int i = 0;
 
     void stall() {
