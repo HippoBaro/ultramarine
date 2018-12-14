@@ -83,22 +83,22 @@ private:
  */
 #define ULTRAMARINE_DEFINE_ACTOR(name, seq)                                                                 \
 ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                                    \
-static_assert(impl::kind == ultramarine::ActorKind::SingletonActor,                                         \
-        "Trying to register an actor type that doesn't inherit from actor base class");
+//static_assert(impl::kind == ultramarine::ActorKind::SingletonActor,                                         \
+//        "Trying to register an actor type that doesn't inherit from actor base class");
 
 #define ULTRAMARINE_DEFINE_LOCAL_ACTOR(name, seq)                                                           \
 ULTRAMARINE_DEFINE_ACTOR_BODY(name, seq)                                                                    \
 static thread_local std::size_t round_robin_counter;                                                        \
-static_assert(impl::kind == ultramarine::ActorKind::LocalActor,                                             \
-        "Trying to register a local actor type that doesn't inherit from local_actor base class");
+//static_assert(impl::kind == ultramarine::ActorKind::LocalActor,                                             \
+//        "Trying to register a local actor type that doesn't inherit from local_actor base class");
 
 #define ULTRAMARINE_IMPLEMENT_ACTOR(name)                                                                   \
 thread_local std::unique_ptr<ultramarine::directory<name>> name::directory;                                 \
-static_assert(name::impl::kind == ultramarine::ActorKind::SingletonActor,                                   \
-        "Trying to implement an actor type that doesn't inherit from actor base class");
+//static_assert(name::impl::kind == ultramarine::ActorKind::SingletonActor,                                   \
+//        "Trying to implement an actor type that doesn't inherit from actor base class");
 
 #define ULTRAMARINE_IMPLEMENT_LOCAL_ACTOR(name)                                                             \
 thread_local std::unique_ptr<ultramarine::directory<name>> name::directory;                                 \
 thread_local std::size_t name::round_robin_counter = 0;                                                     \
-static_assert(name::impl::kind == ultramarine::ActorKind::LocalActor,                                       \
-        "Trying to implement a local actor type that doesn't inherit from local_actor base class");
+//static_assert(name::impl::kind == ultramarine::ActorKind::LocalActor,                                       \
+//        "Trying to implement a local actor type that doesn't inherit from local_actor base class");
