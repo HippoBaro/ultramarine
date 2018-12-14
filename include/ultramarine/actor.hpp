@@ -27,6 +27,7 @@
 #include <memory>
 #include <unordered_map>
 #include <boost/core/noncopyable.hpp>
+#include "actor_attributes.hpp"
 #include "impl/macro.hpp"
 
 namespace ultramarine {
@@ -50,8 +51,15 @@ namespace ultramarine {
         LocalActor
     };
 
-    class actor : private boost::noncopyable {
-    public:
+    template <typename Actor>
+    constexpr ActorKind actor_kind() {
+        if constexpr (std::is_base_of_v<impl::local_actor, Actor>) {
+            return ActorKind::LocalActor;
+        }
+        return ActorKind::SingletonActor;
+    }
+
+    struct actor : private boost::noncopyable {
         using KeyType = actor_id;
     };
 }
