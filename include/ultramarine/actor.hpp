@@ -49,3 +49,5 @@ namespace ultramarine {
         using KeyType = actor_id;
     };
 }
+
+#include "actor_traits.hpp"

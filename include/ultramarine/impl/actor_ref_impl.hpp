@@ -81,7 +81,7 @@ namespace ultramarine::impl {
 
     template<typename Actor>
     class collocated_actor_ref : public actor_ref_impl<collocated_actor_ref<Actor>> {
-        ActorKey <Actor> key;
+        ActorKey<Actor> key;
         seastar::shard_id loc;
 
     public:
@@ -105,7 +105,8 @@ namespace ultramarine::impl {
             return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message, args = std::make_tuple(
                     std::forward<Args>(args) ...)]() mutable {
                 return std::apply([&k, h, message](auto &&... args) {
-                    return (actor_directory<Actor>::hold_activation(k, h)->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
+                    return (actor_directory<Actor>::hold_activation(k, h)->*vtable<Actor>::table[message])(
+                            std::forward<Args>(args) ...);
                 }, std::move(args));
             });
         }
@@ -113,7 +114,7 @@ namespace ultramarine::impl {
 
     template<typename Actor>
     class local_actor_ref : public actor_ref_impl<local_actor_ref<Actor>> {
-        ActorKey <Actor> key;
+        ActorKey<Actor> key;
         Actor *inst = nullptr;
 
     public:
@@ -140,14 +141,29 @@ namespace ultramarine::impl {
     template<typename Actor>
     using actor_ref_variant = std::variant<local_actor_ref<Actor>, collocated_actor_ref<Actor>>;
 
-    template<typename Actor, typename KeyType>
-    [[nodiscard]] static constexpr actor_ref_variant<Actor> make_actor_ref_impl(KeyType &&key) noexcept {
+    template<typename Actor, typename KeyType, typename Func>
+    [[nodiscard]] constexpr auto do_with_actor_ref_impl(KeyType &&key, Func &&func) noexcept {
         auto hash = actor_directory<Actor>::hash_key(std::forward<KeyType>(key));
         auto shard = hash % seastar::smp::count;
         if (shard == seastar::engine().cpu_id()) {
-            return local_actor_ref<Actor>(std::forward<KeyType>(key), hash);
-        } else {
-            return collocated_actor_ref<Actor>(std::forward<KeyType>(key), hash, shard);
+            return func(local_actor_ref<Actor>(std::forward<KeyType>(key), hash));
         }
+        return func(collocated_actor_ref<Actor>(std::forward<KeyType>(key), hash, shard));
+    }
+
+    template<typename Actor, typename KeyType, typename Func>
+    [[nodiscard]] constexpr auto do_with_actor_ref_impl(KeyType key, seastar::shard_id shard, Func &&func) noexcept {
+        auto hash = actor_directory<Actor>::hash_key(shard);
+        if (shard == seastar::engine().cpu_id()) {
+            return func(local_actor_ref<Actor>(std::forward<KeyType>(key), hash));
+        }
+        return func(collocated_actor_ref<Actor>(std::forward<KeyType>(key), hash, shard));
+    }
+
+    template<typename Actor, typename KeyType>
+    [[nodiscard]] constexpr actor_ref_variant<Actor> wrap_actor_ref_impl(KeyType &&key) {
+        return do_with_actor_ref_impl<Actor, KeyType>(std::forward<KeyType>(key), [] (auto &&impl) {
+            return actor_ref_variant<Actor>(std::forward<decltype(impl)>(impl));
+        });
     }
 }

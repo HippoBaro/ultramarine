@@ -27,7 +27,6 @@
 #include <variant>
 #include <core/reactor.hh>
 #include "actor.hpp"
-#include "actor_traits.hpp"
 #include "impl/actor_ref_impl.hpp"
 
 namespace ultramarine {
@@ -43,7 +42,7 @@ namespace ultramarine {
 
         template<typename KeyType>
         explicit constexpr actor_ref(KeyType &&key) :
-                impl(impl::make_actor_ref_impl<Actor>(std::forward<KeyType>(key))) {}
+                impl(impl::wrap_actor_ref_impl<Actor>(std::forward<KeyType>(key))) {}
 
         explicit constexpr actor_ref(impl::local_actor_ref<Actor> const &ref) : impl(ref) {};
 
@@ -94,7 +93,7 @@ namespace ultramarine {
 
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
-            std::size_t next = 0;
+            seastar::shard_id next = 0;
 
             if constexpr (is_unlimited_concurrent_local_actor_v<Actor>) {
                 next = (Actor::round_robin_counter++ + seastar::engine().cpu_id()) % seastar::smp::count;
@@ -103,11 +102,9 @@ namespace ultramarine {
                        % (seastar::smp::count < Actor::max_activations ? seastar::smp::count : Actor::max_activations);
             }
 
-            if (next == seastar::engine().cpu_id()) {
-                return func(impl::local_actor_ref<Actor>(key, impl::actor_directory<Actor>::hash_key(key)));
-            } else {
-                return func(impl::collocated_actor_ref<Actor>(key, impl::actor_directory<Actor>::hash_key(key), next));
-            }
+            return impl::do_with_actor_ref_impl<Actor, ActorKey<Actor>>(key, next, [&func] (auto const& impl) {
+                return func(impl);
+            });
         }
 
         template<typename Handler, typename ...Args>
