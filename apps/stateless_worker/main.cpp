@@ -26,7 +26,6 @@
 #include <ultramarine/silo.hpp>
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
-#include <ultramarine/actor_attributes.hpp>
 
 class worker : public ultramarine::actor, public ultramarine::local_actor<3> {
     void say_hello() const {

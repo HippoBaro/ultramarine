@@ -27,7 +27,7 @@
 #include <memory>
 #include <unordered_map>
 #include <boost/core/noncopyable.hpp>
-#include "actor_attributes.hpp"
+#include "impl/actor_attributes.hpp"
 #include "impl/macro.hpp"
 
 namespace ultramarine {

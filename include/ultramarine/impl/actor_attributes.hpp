@@ -39,5 +39,6 @@ namespace ultramarine {
         static constexpr std::size_t max_activations = ConcurrencyLimit;
     };
 
-    struct non_reantrant_actor {};
+    struct non_reantrant_actor {
+    };
 }
