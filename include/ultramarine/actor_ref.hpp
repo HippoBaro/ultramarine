@@ -32,7 +32,8 @@
 namespace ultramarine {
 
     template<typename Actor, ActorKind = actor_kind<Actor>()>
-    class actor_ref { };
+    class actor_ref {
+    };
 
     template<typename Actor>
     class actor_ref<Actor, ActorKind::SingletonActor> {
@@ -79,7 +80,7 @@ namespace ultramarine {
 
     template<typename Actor>
     class actor_ref<Actor, ActorKind::LocalActor> {
-        ActorKey <Actor> key;
+        ActorKey<Actor> key;
 
     public:
 
@@ -92,8 +93,15 @@ namespace ultramarine {
 
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
-            auto next = (Actor::round_robin_counter++ + seastar::engine().cpu_id())
-                    % (seastar::smp::count < Actor::max_activations ? seastar::smp::count : Actor::max_activations);
+            std::size_t next = 0;
+
+            if constexpr (std::is_base_of_v<local_actor<>, Actor>) {
+                next = (Actor::round_robin_counter++ + seastar::engine().cpu_id()) % seastar::smp::count;
+            } else {
+                next = (Actor::round_robin_counter++ + seastar::engine().cpu_id())
+                       % (seastar::smp::count < Actor::max_activations ? seastar::smp::count : Actor::max_activations);
+            }
+
             if (next == seastar::engine().cpu_id()) {
                 return func(impl::local_actor_ref<Actor>(key, impl::actor_directory<Actor>::hash_key(key)));
             } else {
@@ -122,8 +130,8 @@ namespace ultramarine {
 
     template<typename Actor, typename KeyType>
     [[nodiscard]] constexpr inline actor_ref<Actor> get(KeyType &&key) noexcept {
-        static_assert(std::is_constructible<ActorKey < Actor>,
-                      KeyType &&>::value, "The provided key is not compatible with the Actor");
+        static_assert(std::is_constructible<ActorKey<Actor>,
+                KeyType &&>::value, "The provided key is not compatible with the Actor");
         return actor_ref<Actor>(std::forward<KeyType>(key));
     }
 }
