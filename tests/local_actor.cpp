@@ -28,7 +28,7 @@
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 
-class actor1 : public ultramarine::actor<actor1>, public ultramarine::local_actor<actor1, 1> {
+class actor1 : public ultramarine::actor<actor1> {
     volatile int i = 0;
 
     void stall() {
