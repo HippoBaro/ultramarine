@@ -45,9 +45,13 @@ namespace ultramarine {
         static constexpr auto table = Actor::message::make_vtable();
     };
 
+    template<typename Derived>
     struct actor : private boost::noncopyable {
         using KeyType = actor_id;
+
+        static thread_local std::unique_ptr<ultramarine::directory<Derived>> directory;
     };
+    template<typename Derived> thread_local std::unique_ptr<directory<Derived>> actor<Derived>::directory;
 }
 
 #include "actor_traits.hpp"

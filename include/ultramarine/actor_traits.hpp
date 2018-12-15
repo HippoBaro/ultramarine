@@ -50,5 +50,5 @@ namespace ultramarine {
     constexpr bool is_local_actor_v = std::is_base_of_v<impl::local_actor, Actor>;
 
     template<typename Actor>
-    constexpr bool is_unlimited_concurrent_local_actor_v = std::is_base_of_v<local_actor<>, Actor>;
+    constexpr bool is_unlimited_concurrent_local_actor_v = std::is_base_of_v<local_actor<Actor>, Actor>;
 }

@@ -33,11 +33,15 @@ namespace ultramarine {
         };
     }
 
-    template<std::size_t ConcurrencyLimit = std::numeric_limits<std::size_t>::max()>
+    template<typename Derived, std::size_t ConcurrencyLimit = std::numeric_limits<std::size_t>::max()>
     struct local_actor : impl::local_actor {
         static_assert(ConcurrencyLimit > 0, "Local actor concurrency limit must be a positive integer");
         static constexpr std::size_t max_activations = ConcurrencyLimit;
+
+        static thread_local std::size_t round_robin_counter;
     };
+    template<typename Derived, std::size_t ConcurrencyLimit>
+    thread_local std::size_t local_actor<Derived, ConcurrencyLimit>::round_robin_counter = 0;
 
     struct non_reantrant_actor {
     };
