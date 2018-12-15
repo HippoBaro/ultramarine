@@ -27,7 +27,7 @@
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 
-class worker : public ultramarine::actor, public ultramarine::local_actor<3> {
+class worker : public ultramarine::actor<worker>, public ultramarine::local_actor<worker, 3> {
     void say_hello() const {
         seastar::print("Hello, World; from simple_actor %s (%zu bytes) located on core %u.\n", key, sizeof(worker),
                        seastar::engine().cpu_id());
@@ -37,10 +37,8 @@ class worker : public ultramarine::actor, public ultramarine::local_actor<3> {
         usleep(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::milliseconds(500)).count());
     }
 
-ULTRAMARINE_DEFINE_LOCAL_ACTOR(worker, (say_hello));
+ULTRAMARINE_DEFINE_ACTOR(worker, (say_hello));
 };
-
-ULTRAMARINE_IMPLEMENT_LOCAL_ACTOR(worker);
 
 int main(int ac, char **av) {
     seastar::app_template app;

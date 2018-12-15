@@ -26,7 +26,7 @@
 #include <ultramarine/actor_ref.hpp>
 #include "benchmark_utility.hpp"
 
-class counter_actor : public ultramarine::actor {
+class counter_actor : public ultramarine::actor<counter_actor> {
 public:
     volatile int counter = 0;
 
@@ -60,8 +60,6 @@ public:
                              (get_counter_future)(get_counter_int)
                              (accumulate_future)(accumulate_value));
 };
-
-ULTRAMARINE_IMPLEMENT_ACTOR(counter_actor);
 
 auto plain_object_void_future() {
     int *counter = new int(0);

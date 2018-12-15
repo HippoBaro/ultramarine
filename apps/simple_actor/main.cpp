@@ -27,7 +27,7 @@
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 
-class simple_actor : public ultramarine::actor {
+class simple_actor : public ultramarine::actor<simple_actor> {
 public:
     using KeyType = std::string;
 
@@ -39,7 +39,6 @@ public:
 
     ULTRAMARINE_DEFINE_ACTOR(simple_actor, (say_hello));
 };
-ULTRAMARINE_IMPLEMENT_ACTOR(simple_actor);
 
 int main(int ac, char **av) {
     seastar::app_template app;

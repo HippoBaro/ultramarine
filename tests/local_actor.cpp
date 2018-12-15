@@ -28,7 +28,7 @@
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 
-class actor1 : public ultramarine::actor, public ultramarine::local_actor<1> {
+class actor1 : public ultramarine::actor<actor1>, public ultramarine::local_actor<actor1, 1> {
     volatile int i = 0;
 
     void stall() {
@@ -36,12 +36,10 @@ class actor1 : public ultramarine::actor, public ultramarine::local_actor<1> {
         i = 0;
     }
 
-ULTRAMARINE_DEFINE_LOCAL_ACTOR(actor1, (stall))
+ULTRAMARINE_DEFINE_ACTOR(actor1, (stall));
 };
 
-ULTRAMARINE_IMPLEMENT_LOCAL_ACTOR(actor1);
-
-class actor2 : public ultramarine::actor, public ultramarine::local_actor<> {
+class actor2 : public ultramarine::actor<actor2>, public ultramarine::local_actor<actor2> {
     volatile int i = 0;
 
     void stall() {
@@ -49,10 +47,8 @@ class actor2 : public ultramarine::actor, public ultramarine::local_actor<> {
         i = 0;
     }
 
-ULTRAMARINE_DEFINE_LOCAL_ACTOR(actor2, (stall))
+ULTRAMARINE_DEFINE_ACTOR(actor2, (stall));
 };
-
-ULTRAMARINE_IMPLEMENT_LOCAL_ACTOR(actor2);
 
 using namespace seastar;
 

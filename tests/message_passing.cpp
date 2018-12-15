@@ -47,7 +47,7 @@ struct no_copy_message {
     };
 };
 
-class counter_actor : public ultramarine::actor {
+class counter_actor : public ultramarine::actor<counter_actor> {
 public:
     int counter = 0;
 
@@ -89,8 +89,6 @@ public:
                                      (get_counter_future)(get_counter_int)
                                      (move_arg_message)(move_return_value_message)(move_return_future_message));
 };
-
-ULTRAMARINE_IMPLEMENT_ACTOR(counter_actor);
 
 using namespace seastar;
 

@@ -47,7 +47,7 @@ struct no_copy_message {
     };
 };
 
-class string_actor : public ultramarine::actor {
+class string_actor : public ultramarine::actor<string_actor> {
 
     std::string get_key() {
         return key;
@@ -58,8 +58,6 @@ public:
 
     ULTRAMARINE_DEFINE_ACTOR(string_actor, (get_key))
 };
-
-ULTRAMARINE_IMPLEMENT_ACTOR(string_actor);
 
 using namespace seastar;
 
