@@ -96,7 +96,7 @@ namespace ultramarine::impl {
         template<typename Handler>
         inline constexpr auto schedule(Handler message) const {
             return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message] {
-                return (actor_directory<Actor>::hold_activation(k, h)->*vtable<Actor>::table[message])();
+                return actor_directory<Actor>::dispatch_message(k, h, message);
             });
         }
 
@@ -105,8 +105,7 @@ namespace ultramarine::impl {
             return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message, args = std::make_tuple(
                     std::forward<Args>(args) ...)]() mutable {
                 return std::apply([&k, h, message](auto &&... args) {
-                    return (actor_directory<Actor>::hold_activation(k, h)->*vtable<Actor>::table[message])(
-                            std::forward<Args>(args) ...);
+                    return actor_directory<Actor>::dispatch_message(k, h, message, std::forward<Args>(args) ...);
                 }, std::move(args));
             });
         }
@@ -129,12 +128,12 @@ namespace ultramarine::impl {
 
         template<typename Handler>
         inline constexpr auto schedule(Handler message) const {
-            return (inst->*vtable<Actor>::table[message])();
+            return actor_directory<Actor>::dispatch_message(inst, message);
         }
 
         template<typename Handler, typename ...Args>
         inline constexpr auto schedule(Handler message, Args &&... args) const {
-            return (inst->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
+            return actor_directory<Actor>::dispatch_message(inst, message, std::forward<Args>(args) ...);
         }
     };
 

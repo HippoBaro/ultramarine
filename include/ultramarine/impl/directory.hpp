@@ -33,13 +33,33 @@ namespace ultramarine::impl {
             return std::hash<ActorKey<Actor>>{}(key);
         }
 
-        [[nodiscard]] static constexpr Actor *hold_activation(ActorKey<Actor> const& key, actor_id id) {
+        [[nodiscard]] static constexpr Actor *hold_activation(ActorKey <Actor> const &key, actor_id id) {
             if (!Actor::directory) [[unlikely]] {
                 Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
             }
 
             auto r = std::get<0>(Actor::directory->try_emplace(id, key));
             return &(std::get<1>(*r));
+        }
+
+        template<typename Handler, typename ...Args>
+        static constexpr auto dispatch_message(Actor *activation, Handler message, Args &&... args) {
+            return (activation->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
+        }
+
+        template<typename Handler>
+        static constexpr auto dispatch_message(Actor *activation, Handler message) {
+            return (activation->*vtable<Actor>::table[message])();
+        }
+
+        template<typename KeyType, typename Handler, typename ...Args>
+        static constexpr auto dispatch_message(KeyType &&key, actor_id id, Handler message, Args &&... args) {
+            return dispatch_message(hold_activation(key, id), message, std::forward<Args>(args) ...);
+        }
+
+        template<typename KeyType, typename Handler>
+        static constexpr auto dispatch_message(KeyType &&key, actor_id id, Handler message) {
+            return dispatch_message(hold_activation(key, id), message);
         }
     };
 }
