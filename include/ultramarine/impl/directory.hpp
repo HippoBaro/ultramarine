@@ -44,11 +44,27 @@ namespace ultramarine::impl {
 
         template<typename Handler, typename ...Args>
         static constexpr auto dispatch_message(Actor *activation, Handler message, Args &&... args) {
+            if constexpr (!is_reentrant_v < Actor >) {
+                return seastar::with_semaphore(activation->semaphore, 1, std::chrono::seconds(1),
+                                               [message, activation, args = std::make_tuple(
+                                                       std::forward<Args>(args) ...)] {
+                                                   return std::apply([activation, message](auto &&... args) {
+                                                       return (activation->*vtable<Actor>::table[message])(
+                                                               std::forward<Args>(args) ...);
+                                                   }, std::move(args));
+                                               });
+            }
             return (activation->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
         }
 
         template<typename Handler>
         static constexpr auto dispatch_message(Actor *activation, Handler message) {
+            if constexpr (!is_reentrant_v < Actor >) {
+                return seastar::with_semaphore(activation->semaphore, 1, std::chrono::seconds(1),
+                                               [message, activation] {
+                                                   return (activation->*vtable<Actor>::table[message])();
+                                               });
+            }
             return (activation->*vtable<Actor>::table[message])();
         }
 

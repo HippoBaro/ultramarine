@@ -44,7 +44,7 @@ namespace ultramarine {
     constexpr bool is_actor_v = std::is_base_of_v<actor, Actor>;
 
     template<typename Actor>
-    constexpr bool is_reantrant_v = !std::is_base_of_v<non_reantrant_actor, Actor>;
+    constexpr bool is_reentrant_v = !std::is_base_of_v<non_reentrant_actor<Actor>, Actor>;
 
     template<typename Actor>
     constexpr bool is_local_actor_v = std::is_base_of_v<impl::local_actor, Actor>;

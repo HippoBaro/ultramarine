@@ -25,6 +25,7 @@
 #pragma once
 
 #include <limits>
+#include <core/semaphore.hh>
 
 namespace ultramarine {
 
@@ -43,6 +44,8 @@ namespace ultramarine {
     template<typename Derived, std::size_t ConcurrencyLimit>
     thread_local std::size_t local_actor<Derived, ConcurrencyLimit>::round_robin_counter = 0;
 
-    struct non_reantrant_actor {
+    template <typename Derived>
+    struct non_reentrant_actor {
+        seastar::semaphore semaphore = seastar::semaphore(1);
     };
 }
