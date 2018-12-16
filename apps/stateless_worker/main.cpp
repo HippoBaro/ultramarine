@@ -23,18 +23,21 @@
  */
 
 #include <core/app-template.hh>
+#include <core/sleep.hh>
 #include <ultramarine/silo.hpp>
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 
-class worker : public ultramarine::actor<worker>, public ultramarine::local_actor<worker, 3> {
-    void say_hello() const {
+class worker :
+        public ultramarine::actor<worker>,
+        public ultramarine::local_actor<worker, 3>,
+        public ultramarine::non_reentrant_actor<worker> {
+    seastar::future<> say_hello() const {
         seastar::print("Hello, World; from simple_actor %s (%zu bytes) located on core %u.\n", key, sizeof(worker),
                        seastar::engine().cpu_id());
 
         // Simulate long-running job
-        // For scheduling demonstration only. Never stall seastar's reactor.
-        usleep(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::milliseconds(500)).count());
+        return seastar::sleep(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::milliseconds(500)));
     }
 
 ULTRAMARINE_DEFINE_ACTOR(worker, (say_hello));

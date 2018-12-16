@@ -25,26 +25,21 @@
 #include <numeric>
 #include <tests/test-utils.hh>
 #include <core/thread.hh>
+#include <core/sleep.hh>
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 
-class actor1 : public ultramarine::actor<actor1> {
-    volatile int i = 0;
-
-    void stall() {
-        while (i < std::numeric_limits<int>::max() / 10) i++;
-        i = 0;
+class actor1 : public ultramarine::actor<actor1>, public ultramarine::non_reentrant_actor<actor1> {
+    seastar::future<> stall() {
+        return seastar::sleep(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::milliseconds(500)));
     }
 
 ULTRAMARINE_DEFINE_ACTOR(actor1, (stall));
 };
 
 class actor2 : public ultramarine::actor<actor2>, public ultramarine::local_actor<actor2> {
-    volatile int i = 0;
-
-    void stall() {
-        while (i < std::numeric_limits<int>::max() / 10) i++;
-        i = 0;
+    seastar::future<> stall() {
+        return seastar::sleep(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::milliseconds(500)));
     }
 
 ULTRAMARINE_DEFINE_ACTOR(actor2, (stall));
