@@ -3,3 +3,6 @@
 
 add_executable(message_passing message_passing.cpp benchmark_utility.hpp)
 target_link_libraries(message_passing PRIVATE Ultramarine::actor)
+
+add_executable(skynet skynet.cpp benchmark_utility.hpp)
+target_link_libraries(skynet PRIVATE Ultramarine::actor)
