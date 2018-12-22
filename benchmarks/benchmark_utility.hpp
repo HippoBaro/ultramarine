@@ -36,13 +36,13 @@ namespace ultramarine::benchmark {
     using benchmark_list = std::initializer_list<std::pair<std::string_view, seastar::future<> (*)()>>;
 
     template<typename Pair>
-    auto run_one(Pair &&bench) {
+    auto run_one(Pair &&bench, int run) {
         int *counter = new int(0);
         return seastar::do_with(std::move(bench),
                                 std::vector<std::chrono::microseconds::rep>(),
-                                [counter](auto &bench, auto &vec) {
-                                    return seastar::do_until([counter] {
-                                        return *counter > 1000;
+                                [counter, run](auto &bench, auto &vec) {
+                                    return seastar::do_until([counter, run] {
+                                        return *counter >= run;
                                     }, [counter, &bench, &vec] {
                                         ++*counter;
                                         using namespace std::chrono;
@@ -61,23 +61,23 @@ namespace ultramarine::benchmark {
                                 });
     }
 
-    int run(int ac, char **av, benchmark_list &&benchs) {
+    int run(int ac, char **av, benchmark_list &&benchs, int run = 1000) {
         seastar::app_template app;
 
-        return app.run(ac, av, [benchs = std::move(benchs)] {
+        return app.run(ac, av, [benchs = std::move(benchs), run] {
             return seastar::do_with(std::move(benchs),
                                     std::vector<std::chrono::microseconds::rep>(),
-                                    [](auto &benchs, auto &vec) {
+                                    [run](auto &benchs, auto &vec) {
                                         auto silo = new ultramarine::silo_server();
-                                        return silo->start().then([silo, &benchs] {
+                                        return silo->start().then([silo, run, &benchs] {
                                             seastar::engine().at_exit([silo] {
                                                 return silo->stop().then([silo] {
                                                     delete silo;
                                                     return seastar::make_ready_future();
                                                 });
                                             });
-                                            return seastar::do_for_each(benchs, [](auto &bench) {
-                                                return run_one(bench);
+                                            return seastar::do_for_each(benchs, [run](auto &bench) {
+                                                return run_one(bench, run);
                                             });
                                         });
                                     });
