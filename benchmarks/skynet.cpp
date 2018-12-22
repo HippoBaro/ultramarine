@@ -23,8 +23,72 @@
  */
 
 #include <ultramarine/actor.hpp>
+#include <ultramarine/actor_ref.hpp>
 #include "benchmark_utility.hpp"
 
+class skynet_singleton_actor : public ultramarine::actor<skynet_singleton_actor> {
+public:
+    using KeyType = unsigned long;
+ULTRAMARINE_DEFINE_ACTOR(skynet_singleton_actor, (skynet));
+
+    seastar::future<unsigned long> skynet(unsigned long num, unsigned long size, unsigned int div) const {
+        if (size == 1) {
+            return seastar::make_ready_future<unsigned long>(num);
+        }
+
+        std::vector<seastar::future<unsigned long>> tasks;
+        tasks.reserve(div);
+
+        for (int i = 0; i < div; ++i) {
+            auto sub_num = num + i * (size / div);
+            tasks.emplace_back(
+                    ultramarine::get<skynet_singleton_actor>(sub_num).tell(skynet_singleton_actor::message::skynet(),
+                                                                           (unsigned long) sub_num,
+                                                                           (unsigned long) size / div,
+                                                                           (unsigned int) div));
+        }
+
+        return seastar::do_with(std::move(tasks), [](auto &tasks) {
+            return seastar::when_all(std::begin(tasks), std::end(tasks)).then([](auto tasks) {
+                return seastar::map_reduce(std::begin(tasks), std::end(tasks), [](auto &result) {
+                    return result.get0();
+                }, 0UL, std::plus{});
+            });
+        });
+    }
+};
+
+class skynet_local_actor
+        : public ultramarine::actor<skynet_local_actor>, public ultramarine::local_actor<skynet_local_actor> {
+public:
+    using KeyType = unsigned long;
+ULTRAMARINE_DEFINE_ACTOR(skynet_local_actor, (skynet));
+
+    seastar::future<unsigned long> skynet(unsigned long num, unsigned long size, unsigned int div) const {
+        if (size == 1) {
+            return seastar::make_ready_future<unsigned long>(num);
+        }
+
+        std::vector<seastar::future<unsigned long>> tasks;
+        tasks.reserve(div);
+
+        for (int i = 0; i < div; ++i) {
+            auto sub_num = num + i * (size / div);
+            tasks.emplace_back(ultramarine::get<skynet_local_actor>(0).tell(skynet_local_actor::message::skynet(),
+                                                                            (unsigned long) sub_num,
+                                                                            (unsigned long) size / div,
+                                                                            (unsigned int) div));
+        }
+
+        return seastar::do_with(std::move(tasks), [](auto &tasks) {
+            return seastar::when_all(std::begin(tasks), std::end(tasks)).then([](auto tasks) {
+                return seastar::map_reduce(std::begin(tasks), std::end(tasks), [](auto &result) {
+                    return result.get0();
+                }, 0UL, std::plus{});
+            });
+        });
+    }
+};
 
 static seastar::future<unsigned long> skynet(unsigned long num, unsigned long size, unsigned int div) {
     if (size == 1) {
@@ -48,12 +112,27 @@ static seastar::future<unsigned long> skynet(unsigned long num, unsigned long si
     });
 };
 
+constexpr auto breath = 10;
+constexpr auto max = 1000000;
+
 auto skynet_futures() {
-    return skynet(0, 1000000, 10).discard_result();
+    return skynet(0, max, breath).discard_result();
+}
+
+auto skynet_s_actor() {
+    return ultramarine::get<skynet_singleton_actor>(0).tell(skynet_singleton_actor::message::skynet(), 0, max,
+                                                            breath).discard_result();
+}
+
+auto skynet_l_actor() {
+    return ultramarine::get<skynet_local_actor>(0).tell(skynet_local_actor::message::skynet(), 0, max,
+                                                        breath).discard_result();
 }
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(skynet_futures),
-    }, 100);
+            ULTRAMARINE_BENCH(skynet_s_actor),
+            ULTRAMARINE_BENCH(skynet_l_actor),
+    }, 10);
 }
