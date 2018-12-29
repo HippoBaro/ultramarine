@@ -1,4 +1,8 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.5)
+
+list (APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
+include (Cooking OPTIONAL)
+
 project (ultramarine CXX)
 set (CMAKE_CXX_STANDARD 17)
 
@@ -8,7 +12,7 @@ option(ULTRAMARINE_BUILD_UNITTESTS "Include tests/ as part of the build" ON)
 option(ULTRAMARINE_BUILD_BENCHMARKS "Include benchmarks/ as part of the build" ON)
 
 # Dependencies
-add_subdirectory (third-party)
+find_package (Seastar 1.0 REQUIRED)
 
 # Ultramarine
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
