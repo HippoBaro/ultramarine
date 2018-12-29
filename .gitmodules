@@ -1,4 +1,3 @@
 [submodule "seastar"]
 	path = third-party/seastar
 	url = https://github.com/scylladb/seastar.git
-	branch = seastar-18.08-branch

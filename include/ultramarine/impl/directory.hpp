@@ -34,7 +34,7 @@ namespace ultramarine::impl {
         }
 
         [[nodiscard]] static constexpr Actor *hold_activation(ActorKey <Actor> const &key, actor_id id) {
-            if (!Actor::directory) [[unlikely]] {
+            if (!Actor::directory) {
                 Actor::directory = std::make_unique<ultramarine::directory<Actor>>();
             }
 

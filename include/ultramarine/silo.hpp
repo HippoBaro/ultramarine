@@ -24,8 +24,8 @@
 
 #pragma once
 
-#include "core/distributed.hh"
-#include "core/future.hh"
+#include <seastar/core/future.hh>
+#include <seastar/core/sharded.hh>
 
 namespace ultramarine {
     class silo {
@@ -37,9 +37,9 @@ namespace ultramarine {
 
     class silo_server {
     private:
-        std::unique_ptr<seastar::distributed<silo>> _service;
+        std::unique_ptr<seastar::sharded<silo>> _service;
     public:
-        silo_server() : _service(new seastar::distributed<silo>) { }
+        silo_server() : _service(new seastar::sharded<silo>) { }
 
         seastar::future<> start() {
             return _service->start();

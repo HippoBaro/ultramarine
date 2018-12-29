@@ -25,7 +25,7 @@
 #pragma once
 
 #include <limits>
-#include <core/semaphore.hh>
+#include <seastar/core/semaphore.hh>
 
 namespace ultramarine {
 

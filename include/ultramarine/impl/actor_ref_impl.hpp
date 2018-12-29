@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <seastar/core/future.hh>
+#include <seastar/core/reactor.hh>
 #include "ultramarine/actor.hpp"
 #include "directory.hpp"
 

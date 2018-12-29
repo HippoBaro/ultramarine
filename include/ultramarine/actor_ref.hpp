@@ -25,7 +25,6 @@
 #pragma once
 
 #include <variant>
-#include <core/reactor.hh>
 #include "actor.hpp"
 #include "impl/actor_ref_impl.hpp"
 
