@@ -1,3 +1,48 @@
+# Adapated from Seastar CMake
+add_library (seastar_testing
+        ../third-party/seastar/include/seastar/testing/entry_point.hh
+        ../third-party/seastar/include/seastar/testing/exchanger.hh
+        ../third-party/seastar/include/seastar/testing/seastar_test.hh
+        ../third-party/seastar/include/seastar/testing/test_case.hh
+        ../third-party/seastar/include/seastar/testing/test_runner.hh
+        ../third-party/seastar/include/seastar/testing/thread_test_case.hh
+        ../third-party/seastar/src/testing/entry_point.cc
+        ../third-party/seastar/src/testing/seastar_test.cc
+        ../third-party/seastar/src/testing/test_runner.cc)
+
+add_library (Seastar::seastar_testing ALIAS seastar_testing)
+
+target_compile_definitions (seastar_testing
+        PUBLIC BOOST_TEST_DYN_LINK)
+
+target_link_libraries (seastar_testing
+        PUBLIC
+        Boost::unit_test_framework
+        seastar)
+
+function (add_seastar_test)
+    set (options CUSTOM SUITE)
+    set (one_value_args NAME)
+    set (multi_value_args SOURCES ARGS)
+    cmake_parse_arguments (args "${options}" "${one_value_args}" "${multi_value_args}" "${ARGN}")
+
+    macro (prepare name)
+        add_executable (${name} "${args_SOURCES}")
+        target_link_libraries (${name} PUBLIC Seastar::seastar_testing)
+        target_compile_definitions (${name}
+                PRIVATE SEASTAR_TESTING_MAIN)
+    endmacro ()
+
+    prepare (${args_NAME})
+    # Strip symbols.
+    target_link_libraries (${args_NAME} PUBLIC -s)
+
+    set (name_with_symbols "${args_NAME}_g")
+    prepare (${name_with_symbols})
+    set_target_properties (${name_with_symbols} PROPERTIES EXCLUDE_FROM_ALL ON)
+endfunction ()
+
+
 function(add_ultramarine_test)
     set(options CUSTOM SUITE)
     set(one_value_args NAME)
@@ -26,6 +71,7 @@ function(add_ultramarine_test)
                 --run_test=${TEST_NAME} --catch_system_error=yes)
     endforeach ()
 endfunction()
+
 
 # Logical target for all tests.
 add_custom_target (ultramarine-tests)

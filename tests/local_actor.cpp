@@ -23,9 +23,9 @@
  */
 
 #include <numeric>
-#include <tests/test-utils.hh>
-#include <core/thread.hh>
-#include <core/sleep.hh>
+#include <seastar/testing/thread_test_case.hh>
+#include <seastar/core/thread.hh>
+#include <seastar/core/sleep.hh>
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 

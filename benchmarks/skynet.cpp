@@ -51,8 +51,8 @@ ULTRAMARINE_DEFINE_ACTOR(skynet_singleton_actor, (skynet));
         return seastar::do_with(std::move(tasks), [](auto &tasks) {
             return seastar::when_all(std::begin(tasks), std::end(tasks)).then([](auto tasks) {
                 return seastar::map_reduce(std::begin(tasks), std::end(tasks), [](auto &result) {
-                    return result.get0();
-                }, 0UL, std::plus{});
+                    return std::move(result);
+                }, 0UL, std::plus<unsigned long>());
             });
         });
     }
@@ -83,7 +83,7 @@ ULTRAMARINE_DEFINE_ACTOR(skynet_local_actor, (skynet));
         return seastar::do_with(std::move(tasks), [](auto &tasks) {
             return seastar::when_all(std::begin(tasks), std::end(tasks)).then([](auto tasks) {
                 return seastar::map_reduce(std::begin(tasks), std::end(tasks), [](auto &result) {
-                    return result.get0();
+                    return std::move(result);
                 }, 0UL, std::plus{});
             });
         });
@@ -106,7 +106,7 @@ static seastar::future<unsigned long> skynet(unsigned long num, unsigned long si
     return seastar::do_with(std::move(tasks), [](auto &tasks) {
         return seastar::when_all(std::begin(tasks), std::end(tasks)).then([](auto tasks) {
             return seastar::map_reduce(std::begin(tasks), std::end(tasks), [](auto &result) {
-                return result.get0();
+                return std::move(result);
             }, 0UL, std::plus{});
         });
     });
