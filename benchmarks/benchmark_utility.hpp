@@ -27,6 +27,7 @@
 #include <chrono>
 #include <numeric>
 #include <seastar/core/app-template.hh>
+#include <seastar/core/print.hh>
 #include <ultramarine/silo.hpp>
 
 #define ULTRAMARINE_BENCH(name) {#name, name}

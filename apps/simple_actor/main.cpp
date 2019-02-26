@@ -23,6 +23,7 @@
  */
 
 #include <seastar/core/app-template.hh>
+#include <seastar/core/print.hh>
 #include <ultramarine/silo.hpp>
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
