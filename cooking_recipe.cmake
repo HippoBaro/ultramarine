@@ -9,10 +9,14 @@ foreach (_var IN LISTS matchedVars)
     set(_var "-D${_var}=${${_var}}")
     list(APPEND seastarVars ${_var})
 endforeach()
-message(STATUS "Detected Seastar arguments, forwarding " ${seastarVars})
+if (seastarVars)
+    message(STATUS "Detected Seastar arguments, forwarding " ${seastarVars})
+endif()
 
 cooking_ingredient (Seastar
-    CMAKE_ARGS
+    COOKING_RECIPE
+        <DEFAULT>
+    COOKING_CMAKE_ARGS
         ${seastarVars}
     EXTERNAL_PROJECT_ARGS
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/seastar)
