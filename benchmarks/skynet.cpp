@@ -134,5 +134,5 @@ int main(int ac, char **av) {
             ULTRAMARINE_BENCH(skynet_futures),
             ULTRAMARINE_BENCH(skynet_s_actor),
             ULTRAMARINE_BENCH(skynet_l_actor),
-    }, 10);
+    }, 100);
 }

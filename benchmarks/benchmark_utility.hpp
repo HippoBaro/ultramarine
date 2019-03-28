@@ -38,26 +38,30 @@ namespace ultramarine::benchmark {
 
     template<typename Pair>
     auto run_one(Pair &&bench, int run) {
+        using namespace std::chrono;
+
         int *counter = new int(0);
+        auto bench_start = high_resolution_clock::now();
         return seastar::do_with(std::move(bench),
                                 std::vector<std::chrono::microseconds::rep>(),
-                                [counter, run](auto &bench, auto &vec) {
+                                [counter, run, bench_start](auto &bench, auto &vec) {
                                     return seastar::do_until([counter, run] {
                                         return *counter >= run;
                                     }, [counter, &bench, &vec] {
                                         ++*counter;
-                                        using namespace std::chrono;
                                         auto start = high_resolution_clock::now();
                                         return std::get<1>(bench)().then([start, &vec] {
                                             auto stop = high_resolution_clock::now();
                                             vec.emplace_back(duration_cast<microseconds>(stop - start).count());
                                             return seastar::make_ready_future();
                                         });
-                                    }).then([&vec, &bench] {
+                                    }).then([&vec, &bench, bench_start] {
                                         std::sort(std::begin(vec), std::end(vec));
                                         auto sum = std::accumulate(std::begin(vec), std::end(vec), 0);
-                                        seastar::print("%s: %lu us (min: %lu us -- 99.9p: %lu us)\n", std::get<0>(bench),
-                                                       sum / (vec.size()), *std::begin(vec), *(std::end(vec) - 1));
+                                        seastar::print("%s: %lu us (min: %lu us -- 99.9p: %lu us) | Total: %lu us\n",
+                                                       std::get<0>(bench),
+                                                       sum / (vec.size()), *std::begin(vec), *(std::end(vec) - 1),
+                                                       (high_resolution_clock::now() - bench_start).count());
                                     });
                                 });
     }
