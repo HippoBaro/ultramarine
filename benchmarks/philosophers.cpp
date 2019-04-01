@@ -43,7 +43,6 @@ class philosopher_actor : public ultramarine::actor<philosopher_actor> {
 public:
 ULTRAMARINE_DEFINE_ACTOR(philosopher_actor, (start));
     int round = 0;
-    ultramarine::actor_ref<arbitrator_actor> arbitrator = ultramarine::get<arbitrator_actor>(0);
 
     seastar::future<> start();
 };
@@ -55,9 +54,7 @@ seastar::future<bool> arbitrator_actor::hungry(int philosopher_index) {
     if (leftFork || rightFork) {
         return seastar::make_ready_future<bool>(false);
     } else {
-        leftFork = true;
-        rightFork = true;
-        return seastar::make_ready_future<bool>(true);
+        return seastar::make_ready_future<bool>(leftFork = rightFork = true);
     }
 }
 
@@ -67,13 +64,15 @@ void arbitrator_actor::done(int philosopher_index) {
 }
 
 seastar::future<> philosopher_actor::start() {
-    return seastar::do_until([this] { return round >= RoundLen; }, [this] {
-        return arbitrator.tell(arbitrator_actor::message::hungry(), this->key).then([this](bool allowed) {
-            if (allowed) {
-                ++round;
-                return arbitrator.tell(arbitrator_actor::message::done(), this->key);
-            }
-            return seastar::make_ready_future();
+    return ultramarine::get<arbitrator_actor>(0).visit([this] (auto const& arbitrator) {
+        return seastar::do_until([this] { return round >= RoundLen; }, [this, &arbitrator] {
+            return arbitrator.tell(arbitrator_actor::message::hungry(), this->key).then([this, &arbitrator](bool allowed) {
+                if (allowed) {
+                    ++round;
+                    return arbitrator.tell(arbitrator_actor::message::done(), this->key);
+                }
+                return seastar::make_ready_future();
+            });
         });
     });
 }
