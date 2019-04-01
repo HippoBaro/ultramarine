@@ -53,8 +53,10 @@ namespace ultramarine {
 
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
-            return std::visit([func = std::forward<Func>(func)](auto const &impl) mutable {
-                return func(impl);
+            return std::visit([func = std::forward<Func>(func)](auto impl) mutable {
+                return seastar::do_with(std::move(impl), [func] (auto const& impl) {
+                    return func(impl);
+                });
             }, impl);
         }
 
