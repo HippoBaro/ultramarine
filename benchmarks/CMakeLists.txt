@@ -12,3 +12,6 @@ target_link_libraries(actor_creation PRIVATE Ultramarine::actor)
 
 add_executable(fibonacci fibonacci.cpp benchmark_utility.hpp)
 target_link_libraries(fibonacci PRIVATE Ultramarine::actor)
+
+add_executable(philosophers philosophers.cpp benchmark_utility.hpp)
+target_link_libraries(philosophers PRIVATE Ultramarine::actor)
