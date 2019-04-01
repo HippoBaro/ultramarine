@@ -58,10 +58,11 @@ namespace ultramarine::benchmark {
                                     }).then([&vec, &bench, bench_start] {
                                         std::sort(std::begin(vec), std::end(vec));
                                         auto sum = std::accumulate(std::begin(vec), std::end(vec), 0);
-                                        seastar::print("%s: %lu us (min: %lu us -- 99.9p: %lu us) | Total: %lu us\n",
+                                        seastar::print("%s: %lu us (min: %lu us -- 99.9p: %lu us) | Total: %lu ms\n",
                                                        std::get<0>(bench),
                                                        sum / (vec.size()), *std::begin(vec), *(std::end(vec) - 1),
-                                                       (high_resolution_clock::now() - bench_start).count());
+                                                       duration_cast<milliseconds>(
+                                                               high_resolution_clock::now() - bench_start).count());
                                     });
                                 });
     }
