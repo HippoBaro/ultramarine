@@ -9,3 +9,6 @@ target_link_libraries(skynet PRIVATE Ultramarine::actor)
 
 add_executable(actor_creation actor_creation.cpp benchmark_utility.hpp)
 target_link_libraries(actor_creation PRIVATE Ultramarine::actor)
+
+add_executable(fibonacci fibonacci.cpp benchmark_utility.hpp)
+target_link_libraries(fibonacci PRIVATE Ultramarine::actor)
