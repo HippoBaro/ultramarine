@@ -15,3 +15,6 @@ target_link_libraries(philosophers PRIVATE Ultramarine::actor)
 
 add_executable(ping_pong ping_pong.cpp benchmark_utility.hpp)
 target_link_libraries(ping_pong PRIVATE Ultramarine::actor)
+
+add_executable(counting counting.cpp benchmark_utility.hpp)
+target_link_libraries(counting PRIVATE Ultramarine::actor)
