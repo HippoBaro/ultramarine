@@ -27,6 +27,7 @@
 #include <memory>
 #include <unordered_map>
 #include <boost/core/noncopyable.hpp>
+#include <seastar/core/reactor.hh>
 #include "impl/macro.hpp"
 
 namespace ultramarine {
@@ -34,10 +35,10 @@ namespace ultramarine {
     using actor_id = std::size_t;
     using actor_activation_id = unsigned int;
 
-    template <typename Actor>
+    template<typename Actor>
     using directory = std::unordered_map<actor_id, Actor>;
 
-    template <typename Actor>
+    template<typename Actor>
     using ActorKey = typename Actor::KeyType;
 
     template<typename Actor>
@@ -50,7 +51,17 @@ namespace ultramarine {
         using KeyType = actor_id;
 
         static thread_local std::unique_ptr<ultramarine::directory<Derived>> directory;
+
+        static seastar::future<> clear_directory() {
+            return seastar::smp::invoke_on_all([] {
+                if (directory) {
+                    directory->clear();
+                }
+                return seastar::make_ready_future();
+            });
+        }
     };
+
     template<typename Derived> thread_local std::unique_ptr<directory<Derived>> actor<Derived>::directory;
 }
 
