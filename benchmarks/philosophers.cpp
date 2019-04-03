@@ -27,7 +27,7 @@
 #include "benchmark_utility.hpp"
 
 static constexpr std::size_t PhilosopherLen = 20;
-static constexpr std::size_t RoundLen = 16000;
+static constexpr std::size_t RoundLen = 10000;
 
 class arbitrator_actor : public ultramarine::actor<arbitrator_actor> {
 public:
@@ -78,15 +78,19 @@ seastar::future<> philosopher_actor::start() {
 }
 
 seastar::future<> dinning_philosophers() {
-    std::vector<seastar::future<>> futs;
-    for (int j = 0; j < PhilosopherLen; ++j) {
-        futs.emplace_back(ultramarine::get<philosopher_actor>(j).tell(philosopher_actor::message::start()));
-    }
-    return seastar::when_all(std::begin(futs), std::end(futs)).discard_result();
+    return philosopher_actor::clear_directory().then([] {
+        return arbitrator_actor::clear_directory().then([] {
+            std::vector<seastar::future<>> futs;
+            for (int j = 0; j < PhilosopherLen; ++j) {
+                futs.emplace_back(ultramarine::get<philosopher_actor>(j).tell(philosopher_actor::message::start()));
+            }
+            return seastar::when_all(std::begin(futs), std::end(futs)).discard_result();
+        });
+    });
 }
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(dinning_philosophers),
-    }, 1);
+    }, 100);
 }

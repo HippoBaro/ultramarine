@@ -26,7 +26,7 @@
 #include <ultramarine/actor_ref.hpp>
 #include "benchmark_utility.hpp"
 
-static constexpr std::size_t ProduceCount = 20000000;
+static constexpr std::size_t ProduceCount = 1000000;
 
 class producer_actor : public ultramarine::actor<producer_actor> {
 public:
@@ -69,16 +69,20 @@ std::size_t counting_actor::count() const {
 }
 
 seastar::future<> count_local() {
-    return ultramarine::get<producer_actor>(0).tell(producer_actor::message::produce(), 0);
+    return producer_actor::clear_directory().then([] {
+        return ultramarine::get<producer_actor>(0).tell(producer_actor::message::produce(), 0);
+    });
 }
 
 seastar::future<> count_collocated() {
-    return ultramarine::get<producer_actor>(0).tell(producer_actor::message::produce(), 1);
+    return producer_actor::clear_directory().then([] {
+        return ultramarine::get<producer_actor>(0).tell(producer_actor::message::produce(), 1);
+    });
 }
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(count_local),
             ULTRAMARINE_BENCH(count_collocated),
-    }, 1);
+    }, 100);
 }

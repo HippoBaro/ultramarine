@@ -36,8 +36,8 @@ ULTRAMARINE_DEFINE_ACTOR(throughput_actor, (process));
 
     void process() {
         ++count;
-        auto const sint = std::sin(37.2);
-        auto const res = sint * sint;
+        auto volatile sint = std::sin(37.2);
+        auto volatile res = sint * sint;
         //defeat dead code elimination
         assert(res > 0);
     }
@@ -47,8 +47,10 @@ ULTRAMARINE_DEFINE_ACTOR(throughput_actor, (process));
 static int i; // need to be not on stack
 seastar::future<> fork_join_throughput_naive() {
     i = 0;
-    return seastar::do_until([] { return i >= Iteration * WorkerCount; }, [] {
-        return ultramarine::get<throughput_actor>(i++ % WorkerCount).tell(throughput_actor::message::process());
+    return throughput_actor::clear_directory().then([] {
+        return seastar::do_until([] { return i >= Iteration * WorkerCount; }, [] {
+            return ultramarine::get<throughput_actor>(i++ % WorkerCount).tell(throughput_actor::message::process());
+        });
     });
 }
 
@@ -60,12 +62,15 @@ seastar::future<> fork_join_throughput() {
 
     i = 0;
     return seastar::do_with(std::move(actors), [](auto const &actors) {
-        return seastar::do_until([] { return i >= Iteration; }, [&actors] {
-            return seastar::parallel_for_each(std::begin(actors), std::end(actors), [](auto actor) {
-                return actor.tell(throughput_actor::message::process());
-            }).then([] { ++i; });
+        return throughput_actor::clear_directory().then([&actors] {
+            return seastar::do_until([] { return i >= Iteration; }, [&actors] {
+                return seastar::parallel_for_each(std::begin(actors), std::end(actors), [](auto actor) {
+                    return actor.tell(throughput_actor::message::process());
+                }).then([] { ++i; });
+            });
         });
     });
+
 }
 
 int main(int ac, char **av) {

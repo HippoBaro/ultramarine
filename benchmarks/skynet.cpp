@@ -120,13 +120,17 @@ auto skynet_futures() {
 }
 
 auto skynet_s_actor() {
-    return ultramarine::get<skynet_singleton_actor>(0).tell(skynet_singleton_actor::message::skynet(), 0, max,
-                                                            breath).discard_result();
+    return skynet_singleton_actor::clear_directory().then([] {
+        return ultramarine::get<skynet_singleton_actor>(0).tell(skynet_singleton_actor::message::skynet(), 0, max,
+                                                                breath).discard_result();
+    });
 }
 
 auto skynet_l_actor() {
-    return ultramarine::get<skynet_local_actor>(0).tell(skynet_local_actor::message::skynet(), 0, max,
-                                                        breath).discard_result();
+    return skynet_local_actor::clear_directory().then([] {
+        return ultramarine::get<skynet_local_actor>(0).tell(skynet_local_actor::message::skynet(), 0, max,
+                                                            breath).discard_result();
+    });
 }
 
 int main(int ac, char **av) {
