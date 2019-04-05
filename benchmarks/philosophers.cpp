@@ -92,5 +92,5 @@ seastar::future<> dinning_philosophers() {
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(dinning_philosophers),
-    }, 100);
+    }, 10);
 }

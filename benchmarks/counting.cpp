@@ -24,17 +24,10 @@
 
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
+#include <seastar/core/execution_stage.hh>
 #include "benchmark_utility.hpp"
 
-static constexpr std::size_t ProduceCount = 1000000;
-
-class producer_actor : public ultramarine::actor<producer_actor> {
-public:
-ULTRAMARINE_DEFINE_ACTOR(producer_actor, (produce));
-    std::size_t produced = 0;
-
-    seastar::future<> produce(int counter_addr);
-};
+static constexpr std::size_t ProduceCount = 20000000;
 
 class counting_actor : public ultramarine::actor<counting_actor> {
 public:
@@ -46,12 +39,22 @@ ULTRAMARINE_DEFINE_ACTOR(counting_actor, (count)(increment));
     void increment();
 };
 
+class producer_actor : public ultramarine::actor<producer_actor> {
+public:
+ULTRAMARINE_DEFINE_ACTOR(producer_actor, (produce));
+    std::size_t produced = 0;
+
+    seastar::future<> produce(int counter_addr);
+};
+
 seastar::future<> producer_actor::produce(int counter_addr) {
     produced = 0;
+
     return ultramarine::get<counting_actor>(counter_addr).visit([this](auto const &counter) {
         return seastar::do_until([this] { return produced >= ProduceCount; }, [this, &counter] {
             ++produced;
-            return counter.tell(counting_actor::message::increment());
+            counter.tell(counting_actor::message::increment());
+            return seastar::make_ready_future();
         }).then([this, &counter] {
             return counter.tell(counting_actor::message::count()).then([this](std::size_t discovered) {
                 assert(produced == discovered);
@@ -84,5 +87,5 @@ int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(count_local),
             ULTRAMARINE_BENCH(count_collocated),
-    }, 100);
+    }, 10);
 }

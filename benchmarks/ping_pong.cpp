@@ -26,16 +26,14 @@
 #include <ultramarine/actor_ref.hpp>
 #include "benchmark_utility.hpp"
 
-static constexpr std::size_t PingPongCount = 5000000;
+static constexpr std::size_t PingPongCount = 10000000;
 
 class ping_actor : public ultramarine::actor<ping_actor> {
 public:
-ULTRAMARINE_DEFINE_ACTOR(ping_actor, (ping_pong)(ping));
+ULTRAMARINE_DEFINE_ACTOR(ping_actor, (ping_pong));
     std::size_t pingpong_count = 0;
 
     seastar::future<> ping_pong(int pong_addr);
-
-    void ping();
 };
 
 class pong_actor : public ultramarine::actor<pong_actor> {
@@ -48,30 +46,28 @@ seastar::future<> ping_actor::ping_pong(int pong_addr) {
     pingpong_count = 0;
     return ultramarine::get<pong_actor>(pong_addr).visit([this] (auto const& pong) {
         return seastar::do_until([this] { return pingpong_count >= PingPongCount; }, [this, &pong] {
-            return pong.tell(pong_actor::message::pong(), this->key);
+            return pong.tell(pong_actor::message::pong(), this->key).then([this] {
+                ++pingpong_count;
+            });
         });
     });
 }
 
-void ping_actor::ping() {
-    ++pingpong_count;
-}
-
 seastar::future<> pong_actor::pong(int ping_addr) const {
-    return ultramarine::get<ping_actor>(ping_addr).tell(ping_actor::message::ping());
-}
-
-seastar::future<> pingpong_local() {
-    return ultramarine::get<ping_actor>(0).tell(ping_actor::message::ping_pong(), 0);
+    return seastar::make_ready_future();
 }
 
 seastar::future<> pingpong_collocated() {
     return ultramarine::get<ping_actor>(0).tell(ping_actor::message::ping_pong(), 1);
 }
 
+seastar::future<> pingpong_local() {
+    return ultramarine::get<ping_actor>(0).tell(ping_actor::message::ping_pong(), 6);
+}
+
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
-            ULTRAMARINE_BENCH(pingpong_local),
-            ULTRAMARINE_BENCH(pingpong_collocated),
-    }, 1);
+//            ULTRAMARINE_BENCH(pingpong_local),
+            ULTRAMARINE_BENCH(pingpong_collocated)
+    }, 10);
 }

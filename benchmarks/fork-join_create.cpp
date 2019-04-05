@@ -27,7 +27,7 @@
 #include "benchmark_utility.hpp"
 #include <seastar/core/execution_stage.hh>
 
-static constexpr std::size_t CreationCount = 40000;
+static constexpr std::size_t CreationCount = 16000000;
 
 class create_actor : public ultramarine::actor<create_actor> {
 public:
@@ -42,7 +42,7 @@ ULTRAMARINE_DEFINE_ACTOR(create_actor, (process));
 };
 
 auto inline make(int i) {
-    return ultramarine::get<create_actor>(i).tell(create_actor::message::process());
+
 }
 
 static int i; // need to be not on stack
@@ -50,26 +50,13 @@ seastar::future<> fork_join_create_naive() {
     i = 0;
     return create_actor::clear_directory().then([] {
         return seastar::do_until([] { return i >= CreationCount; }, [] {
-            return make(i++);
-        });
-    });
-}
-
-seastar::future<> fork_join_create() {
-    i = 0;
-    return create_actor::clear_directory().then([] {
-        auto stage = seastar::make_execution_stage("create", make);
-        return seastar::do_with(std::move(stage), [] (auto &stage) {
-            return seastar::do_until([] { return i >= CreationCount; }, [&stage] {
-                return stage(i++);
-            });
+            return ultramarine::get<create_actor>(i++).tell(create_actor::message::process());
         });
     });
 }
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
-            ULTRAMARINE_BENCH(fork_join_create_naive),
-            ULTRAMARINE_BENCH(fork_join_create)
+            ULTRAMARINE_BENCH(fork_join_create_naive)
     }, 10);
 }
