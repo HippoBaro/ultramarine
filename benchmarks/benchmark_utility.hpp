@@ -32,6 +32,23 @@
 
 #define ULTRAMARINE_BENCH(name) {#name, name}
 
+template<typename T>
+T mean(const std::vector<T> &data) {
+    return std::accumulate(data.begin(), data.end(), 0.0) / data.size();
+}
+
+template<typename T>
+T variance(const std::vector<T> &data) {
+    double xBar = mean(data);
+    double sqSum = std::inner_product(data.begin(), data.end(), data.begin(), 0.0);
+    return sqSum / data.size() - xBar * xBar;
+}
+
+template<typename T>
+T stDev(const std::vector<T> &data) {
+    return std::sqrt(variance(data));
+}
+
 namespace ultramarine::benchmark {
 
     using benchmark_list = std::initializer_list<std::pair<std::string_view, seastar::future<> (*)()>>;
@@ -52,12 +69,12 @@ namespace ultramarine::benchmark {
                     vec.emplace_back(duration_cast<microseconds>(stop - start).count());
                     return seastar::make_ready_future();
                 });
-            }).then([&vec, &bench, bench_start, run] {
+            }).then([&vec, &bench, bench_start] {
                 std::sort(std::begin(vec), std::end(vec));
                 auto sum = std::accumulate(std::begin(vec), std::end(vec), 0UL);
-                seastar::print("%s: %lu us (min: %lu us -- 99.9p: %lu us) | Total: %lu ms\n",
+                seastar::print("%s: %lu us (min: %lu us -- 99.9p: %lu us -- std: %lu us) | Total: %lu ms\n",
                                std::get<0>(bench), sum / vec.size(),
-                               *std::begin(vec) / run, *(std::end(vec) - 1) / run,
+                               *std::begin(vec), *(std::end(vec) - 1), stDev(vec),
                                duration_cast<milliseconds>(high_resolution_clock::now() - bench_start).count());
             });
         });
