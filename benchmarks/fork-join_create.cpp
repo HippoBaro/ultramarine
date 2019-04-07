@@ -42,10 +42,6 @@ ULTRAMARINE_DEFINE_ACTOR(create_actor, (process));
 
 };
 
-auto inline make(int i) {
-
-}
-
 static int i; // need to be not on stack
 seastar::future<> fork_join_create_naive() {
     i = 0;
