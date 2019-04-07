@@ -54,13 +54,13 @@ seastar::future<> fork_join_throughput() {
     i = 0;
     return seastar::do_with(std::move(actors), [](auto &actors) {
         return throughput_actor::clear_directory().then([&actors] {
-            return ultramarine::with_buffer(1000, [&actors](auto &buffer) {
-                return seastar::parallel_for_each(std::begin(actors), std::end(actors), [&buffer](auto &pair) {
-                    return std::get<1>(pair).visit([&pair, &buffer](auto const &actor) {
+            return seastar::parallel_for_each(std::begin(actors), std::end(actors), [](auto &pair) {
+                return std::get<1>(pair).visit([&pair](auto const &actor) {
+                    return ultramarine::with_buffer(100, [&pair, &actor](auto &buffer) {
                         return seastar::do_until([&pair] {
                             return std::get<0>(pair)++ >= Iteration;
                         }, [&buffer, &actor] {
-                            return actor.tell(throughput_actor::message::process());
+                            return buffer(actor.tell(throughput_actor::message::process()));
                         });
                     });
                 });
