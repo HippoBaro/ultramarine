@@ -40,11 +40,12 @@ namespace ultramarine {
         message_buffer(message_buffer &&) = default;
 
         auto operator() (Future &&fut) {
-            if (futs.full()) {
-                return flush();
+            auto ret = seastar::make_ready_future();
+            if (futs.full() && !(futs.front().available() || futs.front().failed())) {
+                ret = std::move(futs.front());
             }
             futs.push_back(std::move(fut));
-            return seastar::make_ready_future();
+            return ret;
         }
 
         auto flush() {
