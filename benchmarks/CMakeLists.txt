@@ -27,3 +27,6 @@ target_link_libraries(fork-join_create PRIVATE Ultramarine::actor)
 
 add_executable(thread_ring thread_ring.cpp benchmark_utility.hpp)
 target_link_libraries(thread_ring PRIVATE Ultramarine::actor)
+
+add_executable(big big.cpp benchmark_utility.hpp)
+target_link_libraries(big PRIVATE Ultramarine::actor)
