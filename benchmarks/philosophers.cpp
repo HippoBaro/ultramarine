@@ -26,8 +26,8 @@
 #include <ultramarine/actor_ref.hpp>
 #include "benchmark_utility.hpp"
 
-static constexpr std::size_t PhilosopherLen = 20;
-static constexpr std::size_t RoundLen = 10000;
+static constexpr std::size_t PhilosopherLen = 10;
+static constexpr std::size_t RoundLen = 1000;
 
 class arbitrator_actor : public ultramarine::actor<arbitrator_actor> {
 public:

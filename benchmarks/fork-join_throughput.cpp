@@ -24,11 +24,12 @@
 
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
+#include <ultramarine/utility.hpp>
 #include <seastar/core/execution_stage.hh>
 #include "benchmark_utility.hpp"
 
 static constexpr std::size_t Iteration = 10000;
-static constexpr std::size_t WorkerCount = 10000;
+static constexpr std::size_t WorkerCount = 1;
 
 class throughput_actor : public ultramarine::actor<throughput_actor> {
 public:
@@ -45,6 +46,30 @@ ULTRAMARINE_DEFINE_ACTOR(throughput_actor, (process));
 
 static int i; // need to be not on stack
 seastar::future<> fork_join_throughput() {
+    std::vector<std::pair<int, ultramarine::actor_ref<throughput_actor>>> actors;
+    for (int j = 0; j < WorkerCount; ++j) {
+        actors.emplace_back(std::make_pair(0, ultramarine::get<throughput_actor>(j)));
+    }
+
+    i = 0;
+    return seastar::do_with(std::move(actors), [](auto &actors) {
+        return throughput_actor::clear_directory().then([&actors] {
+            return ultramarine::with_buffer(1000, [&actors](auto &buffer) {
+                return seastar::parallel_for_each(std::begin(actors), std::end(actors), [&buffer](auto &pair) {
+                    return std::get<1>(pair).visit([&pair, &buffer](auto const &actor) {
+                        return seastar::do_until([&pair] {
+                            return std::get<0>(pair)++ >= Iteration;
+                        }, [&buffer, &actor] {
+                            return actor.tell(throughput_actor::message::process());
+                        });
+                    });
+                });
+            });
+        });
+    });
+}
+
+seastar::future<> fork_join_throughput_naive() {
     std::vector<ultramarine::actor_ref<throughput_actor>> actors;
     for (int j = 0; j < WorkerCount; ++j) {
         actors.emplace_back(ultramarine::get<throughput_actor>(j));
@@ -66,6 +91,7 @@ seastar::future<> fork_join_throughput() {
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
-            ULTRAMARINE_BENCH(fork_join_throughput)
+            ULTRAMARINE_BENCH(fork_join_throughput),
+            ULTRAMARINE_BENCH(fork_join_throughput_naive),
     }, 10);
 }

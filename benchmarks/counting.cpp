@@ -24,6 +24,7 @@
 
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
+#include <ultramarine/utility.hpp>
 #include <seastar/core/execution_stage.hh>
 #include "benchmark_utility.hpp"
 
@@ -51,10 +52,11 @@ seastar::future<> producer_actor::produce(int counter_addr) {
     produced = 0;
 
     return ultramarine::get<counting_actor>(counter_addr).visit([this](auto const &counter) {
-        return seastar::do_until([this] { return produced >= ProduceCount; }, [this, &counter] {
-            ++produced;
-            counter.tell(counting_actor::message::increment());
-            return seastar::make_ready_future();
+        return ultramarine::with_buffer(100, [this, &counter] (auto &buffer) {
+            return seastar::do_until([this] { return produced >= ProduceCount; }, [this, &counter, &buffer] {
+                ++produced;
+                return buffer(counter.tell(counting_actor::message::increment()));
+            });
         }).then([this, &counter] {
             return counter.tell(counting_actor::message::count()).then([this](std::size_t discovered) {
                 assert(produced == discovered);
@@ -71,12 +73,6 @@ std::size_t counting_actor::count() const {
     return discovered;
 }
 
-seastar::future<> count_local() {
-    return producer_actor::clear_directory().then([] {
-        return ultramarine::get<producer_actor>(0).tell(producer_actor::message::produce(), 0);
-    });
-}
-
 seastar::future<> count_collocated() {
     return producer_actor::clear_directory().then([] {
         return ultramarine::get<producer_actor>(0).tell(producer_actor::message::produce(), 1);
@@ -85,7 +81,6 @@ seastar::future<> count_collocated() {
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
-            ULTRAMARINE_BENCH(count_local),
             ULTRAMARINE_BENCH(count_collocated),
     }, 10);
 }

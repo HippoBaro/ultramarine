@@ -58,5 +58,5 @@ auto fib() {
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(fib),
-    }, 100);
+    }, 10);
 }
