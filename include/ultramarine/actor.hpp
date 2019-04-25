@@ -41,14 +41,23 @@ namespace ultramarine {
     template<typename Actor>
     using ActorKey = typename Actor::KeyType;
 
+    struct round_robin_local_placement_strategy {
+        seastar::shard_id operator()(std::size_t hash) const noexcept {
+            return hash % seastar::smp::count;
+        }
+    };
+
+    using default_local_placement_strategy = round_robin_local_placement_strategy;
+
     template<typename Actor>
     struct vtable {
         static constexpr auto table = Actor::message::make_vtable();
     };
 
-    template<typename Derived>
+    template<typename Derived, typename LocalPlacementStrategy = default_local_placement_strategy>
     struct actor : private boost::noncopyable {
         using KeyType = actor_id;
+        using PlacementStrategy = LocalPlacementStrategy;
 
         static thread_local std::unique_ptr<ultramarine::directory<Derived>> directory;
 
@@ -62,7 +71,8 @@ namespace ultramarine {
         }
     };
 
-    template<typename Derived> thread_local std::unique_ptr<directory<Derived>> actor<Derived>::directory;
+    template<typename Derived, typename LocalPlacementStrategy>
+    thread_local std::unique_ptr<directory<Derived>> actor<Derived, LocalPlacementStrategy>::directory;
 }
 
 #include "actor_traits.hpp"

@@ -120,7 +120,7 @@ namespace ultramarine::impl {
     template<typename Actor, typename KeyType, typename Func>
     [[nodiscard]] constexpr auto do_with_actor_ref_impl(KeyType &&key, Func &&func) noexcept {
         auto hash = actor_directory<Actor>::hash_key(std::forward<KeyType>(key));
-        auto shard = hash % seastar::smp::count;
+        auto shard = typename Actor::PlacementStrategy{}(hash);
         if (shard == seastar::engine().cpu_id()) {
             return func(local_actor_ref<Actor>(std::forward<KeyType>(key), hash));
         }
