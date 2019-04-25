@@ -29,11 +29,11 @@
 #include "benchmark_utility.hpp"
 
 static constexpr std::size_t Iteration = 10000;
-static constexpr std::size_t WorkerCount = 1;
+static constexpr std::size_t WorkerCount = 10;
 
 class throughput_actor : public ultramarine::actor<throughput_actor> {
 public:
-ULTRAMARINE_DEFINE_ACTOR(throughput_actor, (process));
+ULTRAMARINE_DEFINE_ACTOR(throughput_actor, (process)(create));
 
     void process() {
         auto volatile sint = std::sin(37.2);
@@ -41,6 +41,8 @@ ULTRAMARINE_DEFINE_ACTOR(throughput_actor, (process));
         //defeat dead code elimination
         assert(res > 0);
     }
+
+    void create() const {}
 
 };
 
@@ -53,15 +55,13 @@ seastar::future<> fork_join_throughput() {
 
     i = 0;
     return seastar::do_with(std::move(actors), [](auto &actors) {
-        return throughput_actor::clear_directory().then([&actors] {
-            return seastar::parallel_for_each(std::begin(actors), std::end(actors), [](auto &pair) {
-                return std::get<1>(pair).visit([&pair](auto const &actor) {
-                    return ultramarine::with_buffer(100, [&pair, &actor](auto &buffer) {
-                        return seastar::do_until([&pair] {
-                            return std::get<0>(pair)++ >= Iteration;
-                        }, [&buffer, &actor] {
-                            return buffer(actor.tell(throughput_actor::message::process()));
-                        });
+        return seastar::do_for_each(std::begin(actors), std::end(actors), [](auto &pair) {
+            return std::get<1>(pair).visit([&pair](auto const &actor) {
+                return ultramarine::with_buffer(100, [&pair, &actor](auto &buffer) {
+                    return seastar::do_until([&pair] {
+                        return std::get<0>(pair)++ >= Iteration;
+                    }, [&buffer, &actor] {
+                        return buffer(actor.tell(throughput_actor::message::process()));
                     });
                 });
             });
@@ -69,29 +69,8 @@ seastar::future<> fork_join_throughput() {
     });
 }
 
-seastar::future<> fork_join_throughput_naive() {
-    std::vector<ultramarine::actor_ref<throughput_actor>> actors;
-    for (int j = 0; j < WorkerCount; ++j) {
-        actors.emplace_back(ultramarine::get<throughput_actor>(j));
-    }
-
-    i = 0;
-    return seastar::do_with(std::move(actors), [](auto const &actors) {
-        return throughput_actor::clear_directory().then([&actors] {
-            return seastar::do_until([] { return i >= Iteration; }, [&actors] {
-                ++i;
-                return seastar::parallel_for_each(std::begin(actors), std::end(actors), [](auto actor) {
-                    return actor.tell(throughput_actor::message::process());
-                });
-            });
-        });
-    });
-
-}
-
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(fork_join_throughput),
-            ULTRAMARINE_BENCH(fork_join_throughput_naive),
-    }, 10);
+    }, 100);
 }

@@ -40,23 +40,22 @@ ULTRAMARINE_DEFINE_ACTOR(ping_actor, (ping_pong));
 class pong_actor : public ultramarine::actor<pong_actor> {
 public:
 ULTRAMARINE_DEFINE_ACTOR(pong_actor, (pong));
+
     void pong() const;
 };
 
 seastar::future<> ping_actor::ping_pong(int pong_addr) {
     pingpong_count = 0;
-    return ultramarine::get<pong_actor>(pong_addr).visit([this] (auto const& pong) {
-        return ultramarine::with_buffer(100, [this, &pong] (auto &buffer) {
-            return seastar::do_until([this] { return pingpong_count >= PingPongCount; }, [this, &pong, &buffer] {
-                return buffer(pong.tell(pong_actor::message::pong()).then([this] {
-                    ++pingpong_count;
-                }));
+    return ultramarine::get<pong_actor>(pong_addr).visit([this](auto const &pong) {
+        return seastar::do_until([this] { return pingpong_count >= PingPongCount; }, [this, &pong] {
+            return pong.tell(pong_actor::message::pong()).then([this] {
+                ++pingpong_count;
             });
         });
     });
 }
 
-void pong_actor::pong() const { }
+void pong_actor::pong() const {}
 
 seastar::future<> pingpong_collocated() {
     return ultramarine::get<ping_actor>(0).tell(ping_actor::message::ping_pong(), 1);

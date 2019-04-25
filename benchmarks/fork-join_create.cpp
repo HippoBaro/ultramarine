@@ -28,7 +28,7 @@
 #include "benchmark_utility.hpp"
 #include <seastar/core/execution_stage.hh>
 
-static constexpr std::size_t CreationCount = 1000000;
+static constexpr std::size_t CreationCount = 16000000;
 
 class create_actor : public ultramarine::actor<create_actor> {
 public:
@@ -43,15 +43,6 @@ ULTRAMARINE_DEFINE_ACTOR(create_actor, (process));
 };
 
 static int i; // need to be not on stack
-seastar::future<> fork_join_create_naive() {
-    i = 0;
-    return create_actor::clear_directory().then([] {
-        return seastar::do_until([] { return i >= CreationCount; }, [] {
-            return ultramarine::get<create_actor>(i++).tell(create_actor::message::process());
-        });
-    });
-}
-
 seastar::future<> fork_join_create_buffered() {
     i = 0;
     return create_actor::clear_directory().then([] {
@@ -65,7 +56,6 @@ seastar::future<> fork_join_create_buffered() {
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
-            ULTRAMARINE_BENCH(fork_join_create_naive),
             ULTRAMARINE_BENCH(fork_join_create_buffered)
     }, 10);
 }

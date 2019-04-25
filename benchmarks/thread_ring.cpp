@@ -25,35 +25,28 @@
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 #include <seastar/core/execution_stage.hh>
+#include <ultramarine/utility.hpp>
 #include "benchmark_utility.hpp"
 
-static constexpr std::size_t RingSize = 1000;
+static constexpr std::size_t RingSize =     1000000;
 static constexpr std::size_t MessageCount = 1000000;
 
 class thread_ring_actor : public ultramarine::actor<thread_ring_actor> {
+
 public:
-ULTRAMARINE_DEFINE_ACTOR(thread_ring_actor, (ping)(done));
-    ultramarine::actor_id const next = (key + 1) % RingSize;
-    seastar::promise<> promise;
-
-    void ping(int remaining) {
+ULTRAMARINE_DEFINE_ACTOR(thread_ring_actor, (ping));
+    ultramarine::actor_id next = (key + 1) % RingSize;
+    seastar::future<> ping(int remaining) {
         if (remaining > 0) {
-            ultramarine::get<thread_ring_actor>(next).tell(thread_ring_actor::message::ping(), remaining - 1);
-        } else {
-            promise.set_value();
+            return ultramarine::get<thread_ring_actor>(next).tell(thread_ring_actor::message::ping(), remaining - 1);
         }
-    }
-
-    seastar::future<> done() {
-        return promise.get_future();
+        return seastar::make_ready_future();
     }
 };
 
 seastar::future<> thread_ring() {
     return thread_ring_actor::clear_directory().then([] {
-        return ultramarine::get<thread_ring_actor>(0).tell(thread_ring_actor::message::ping(), MessageCount).then([] {
-            return ultramarine::get<thread_ring_actor>(MessageCount % RingSize).tell(thread_ring_actor::message::done());
-        });
+        return ultramarine::get<thread_ring_actor>(0).tell(thread_ring_actor::message::ping(), MessageCount);
     });
 }
 
