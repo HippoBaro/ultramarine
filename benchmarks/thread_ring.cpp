@@ -28,14 +28,22 @@
 #include <ultramarine/utility.hpp>
 #include "benchmark_utility.hpp"
 
-static constexpr std::size_t RingSize =     1000000;
+static constexpr std::size_t RingSize = 1000000;
 static constexpr std::size_t MessageCount = 1000000;
 
-class thread_ring_actor : public ultramarine::actor<thread_ring_actor> {
+template<std::size_t MaxContiguousSegmentPerShard>
+struct contiguous_placement_strategy {
+    seastar::shard_id operator()(std::size_t hash) const noexcept {
+        return (std::size_t)(hash * (seastar::smp::count / (double)MaxContiguousSegmentPerShard)) % seastar::smp::count;
+    }
+};
+
+class thread_ring_actor : public ultramarine::actor<thread_ring_actor, contiguous_placement_strategy<25000UL>> {
 
 public:
 ULTRAMARINE_DEFINE_ACTOR(thread_ring_actor, (ping));
     ultramarine::actor_id next = (key + 1) % RingSize;
+
     seastar::future<> ping(int remaining) {
         if (remaining > 0) {
             return ultramarine::get<thread_ring_actor>(next).tell(thread_ring_actor::message::ping(), remaining - 1);
