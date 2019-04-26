@@ -28,18 +28,30 @@
 #include <unordered_map>
 #include <boost/core/noncopyable.hpp>
 #include <seastar/core/reactor.hh>
-#include "directory.hpp"
 #include "impl/directory.hpp"
-#include "impl/macro.hpp"
+#include "macro.hpp"
 
 namespace ultramarine {
+    /// Base template class defining an actor
+    /// \unique_name ultramarine::actor
+    /// \tparam Derived The derived actor class for CRTP purposes
+    /// \tparam LocalPlacementStrategy Optional. Allows to specify a custom local placement strategy. Defaults to [ultramarine::default_local_placement_strategy]()
+    /// \requires `Derived` should implement actor behavior using [ULTRAMARINE_DEFINE_ACTOR]()
     template<typename Derived, typename LocalPlacementStrategy = default_local_placement_strategy>
     struct actor : private boost::noncopyable {
+
+        /// Default key type (unsigned long integer)
+        /// See [ultramarine::actor_id]()
         using KeyType = actor_id;
+
+        /// Default placement strategy
         using PlacementStrategy = LocalPlacementStrategy;
 
+        /// \exclude
         static thread_local std::unique_ptr<impl::directory<Derived>> directory;
 
+        /// \effects Clears all actors of type Derived in all shards
+        /// \returns A future available when all instances of this actor type have been purged
         static seastar::future<> clear_directory() {
             return seastar::smp::invoke_on_all([] {
                 if (directory) {
@@ -50,8 +62,9 @@ namespace ultramarine {
         }
     };
 
+    /// \exclude
     template<typename Derived, typename LocalPlacementStrategy>
-    thread_local std::unique_ptr<impl::directory<Derived>> actor<Derived, LocalPlacementStrategy>::directory;
+    thread_local std::unique_ptr<impl::directory<Derived>> ultramarine::actor<Derived, LocalPlacementStrategy>::directory;
 }
 
 #include "actor_traits.hpp"

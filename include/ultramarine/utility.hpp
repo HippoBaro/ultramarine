@@ -29,16 +29,22 @@
 #include <seastar/core/reactor.hh>
 
 namespace ultramarine {
+    /// A dynamic message buffer storing a set number of futures running concurrently
+    /// \tparam Future The future type the message buffer will store
+    /// \requires Type `Future` shall be a `seastar::future`
     template<typename Future>
     struct message_buffer {
         boost::circular_buffer<Future> futs;
 
-        message_buffer(std::size_t capacity) : futs(capacity) {};
+        explicit message_buffer(std::size_t capacity) : futs(capacity) {};
 
         message_buffer(message_buffer const &) = delete;
 
-        message_buffer(message_buffer &&) = default;
+        message_buffer(message_buffer &&) noexcept = default;
 
+        /// Push a future in the message buffer
+        /// \param fut The future to push in the message buffer
+        /// \returns An immediately available future, or a unresolved future if the message buffer is full
         auto operator() (Future &&fut) {
             auto ret = seastar::make_ready_future();
             if (futs.full() && !(futs.front().available() || futs.front().failed())) {
@@ -48,6 +54,8 @@ namespace ultramarine {
             return ret;
         }
 
+        /// Flush the message buffer such that all future it contains are in an available or failed sate
+        /// \returns A future
         auto flush() {
             return seastar::when_all(std::begin(futs), std::end(futs)).discard_result().then([this] {
                 futs.clear();
@@ -55,6 +63,10 @@ namespace ultramarine {
         }
     };
 
+    /// Create a dynamic message buffer to use in a specified function scope
+    /// \param capacity The number of message the buffer should be able to store before awaiting
+    /// \param func A lambda function using the message buffer
+    /// \returns Any value returned by the provided lambda function
     template<typename Func>
     auto with_buffer(std::size_t capacity, Func &&func) {
         return seastar::do_with(message_buffer<seastar::future<>>(capacity), [func = std::forward<Func>(func)] (auto &buff) {

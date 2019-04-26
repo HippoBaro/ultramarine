@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <variant>
 #include <seastar/core/future.hh>
 #include <seastar/core/reactor.hh>
 #include "directory.hpp"

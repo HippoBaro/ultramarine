@@ -31,10 +31,17 @@
 
 namespace ultramarine {
 
+    /// A movable and copyable reference to a virtual actor
+    /// \unique_name ultramarine::actor_ref
+    /// \tparam Actor The type of actor to reference
+    /// \exclude
     template<typename Actor, ActorKind = actor_kind<Actor>()>
     class actor_ref {
     };
 
+    /// A movable and copyable reference to a virtual actor
+    /// \tparam Actor The type of actor to reference
+    /// \requires Type `Actor` shall inherit from [ultramarine::actor]()
     template<typename Actor>
     class actor_ref<Actor, ActorKind::SingletonActor> {
         const impl::actor_ref_variant<Actor> impl;
@@ -52,6 +59,9 @@ namespace ultramarine {
 
         constexpr actor_ref(actor_ref &&) noexcept = default;
 
+        /// Obtain the concrete actor_ref implementation
+        /// \param func A lambda to execute with the actor_ref implementation
+        /// \returns The value returned by the provided lambda, if any
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
             return std::visit([func = std::forward<Func>(func)](auto &&impl) mutable {
@@ -59,6 +69,10 @@ namespace ultramarine {
             }, impl);
         }
 
+        /// Enqueue a message to the actor referenced by this actor_ref instance
+        /// \effects Creates the actor if it doesn't exist
+        /// \param message The message handler to enqueue
+        /// \returns A future representing the eventually returned value by the actor, or a failed future
         template<typename Handler, typename ...Args>
         constexpr auto inline tell(Handler message, Args &&... args) const {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
@@ -70,6 +84,10 @@ namespace ultramarine {
             }();
         }
 
+        /// Enqueue a message to the actor referenced by this actor_ref instance
+        /// \effects Creates the actor if it doesn't exist
+        /// \param message The message handler to enqueue
+        /// \returns A future representing the eventually returned value by the actor, or a failed future
         template<typename Handler>
         constexpr auto inline tell(Handler message) const {
             return visit([message](auto &&impl) {
@@ -78,6 +96,9 @@ namespace ultramarine {
         };
     };
 
+    /// A movable and copyable reference to a virtual actor
+    /// \tparam Actor The type of actor to reference
+    /// \requires Type `Actor` shall inherit from [ultramarine::actor]() and from attribute [ultramarine::local_actor]()
     template<typename Actor>
     class actor_ref<Actor, ActorKind::LocalActor> {
         const impl::ActorKey<Actor> key;
@@ -91,6 +112,9 @@ namespace ultramarine {
 
         constexpr actor_ref(actor_ref &&) noexcept = default;
 
+        /// Obtain the concrete actor_ref implementation
+        /// \param func A lambda to execute with the actor_ref implementation
+        /// \returns The value returned by the provided lambda, if any
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
             seastar::shard_id next = 0;
@@ -107,6 +131,11 @@ namespace ultramarine {
             });
         }
 
+        /// Enqueue a message to the actor referenced by this actor_ref instance
+        /// \effects Creates the actor if it doesn't exist
+        /// \param message The message handler to enqueue
+        /// \param args Arguments to pass to the message handler
+        /// \returns A future representing the eventually returned value by the actor, or a failed future
         template<typename Handler, typename ...Args>
         constexpr auto inline tell(Handler message, Args &&... args) const {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
@@ -118,6 +147,10 @@ namespace ultramarine {
             }();
         }
 
+        /// Enqueue a message to the actor referenced by this actor_ref instance
+        /// \effects Creates the actor if it doesn't exist
+        /// \param message The message handler to enqueue
+        /// \returns A future representing the eventually returned value by the actor, or a failed future
         template<typename Handler>
         constexpr auto inline tell(Handler message) const {
             return visit([message](auto &&impl) {
@@ -126,6 +159,11 @@ namespace ultramarine {
         };
     };
 
+    /// Create a reference to a virtual actor
+    /// \tparam Actor The type of actor to reference
+    /// \requires Type `Actor` shall inherit from [ultramarine::actor]()
+    /// \param key The primary key of the actor
+    /// \returns A [ultramarine::actor_ref]()
     template<typename Actor, typename KeyType = typename Actor::Keytype>
     [[nodiscard]] constexpr inline actor_ref<Actor> get(KeyType &&key) noexcept {
         return actor_ref<Actor>(std::forward<KeyType>(key));

@@ -28,6 +28,7 @@
 #include <seastar/core/sharded.hh>
 
 namespace ultramarine {
+    /// \exclude
     class silo {
     public:
         seastar::future<> stop() {
@@ -35,6 +36,7 @@ namespace ultramarine {
         }
     };
 
+    /// \exclude
     class silo_server {
     private:
         std::unique_ptr<seastar::sharded<silo>> _service;

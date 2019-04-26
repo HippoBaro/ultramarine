@@ -28,12 +28,21 @@
 
 namespace ultramarine {
 
+    /// Actors are fetched internally via an unsigned integer id
+    /// \unique_name ultramarine::actor_id
     using actor_id = std::size_t;
+
+    /// A round-robin placement strategy that shards actors based on the modulo of their hashed key
+    /// \unique_name ultramarine::round_robin_local_placement_strategy
     struct round_robin_local_placement_strategy {
+        /// \param A hashed actor key
+        /// \returns The location the actor should be placed in
         seastar::shard_id operator()(std::size_t hash) const noexcept {
             return hash % seastar::smp::count;
         }
     };
 
+    /// Default local placement strategy uses round_robin_local_placement_strategy
+    /// \unique_name ultramarine::default_local_placement_strategy
     using default_local_placement_strategy = round_robin_local_placement_strategy;
 }

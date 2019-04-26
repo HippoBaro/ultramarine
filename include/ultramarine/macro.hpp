@@ -27,16 +27,32 @@
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/hana.hpp>
 
+/// \exclude
 #define ULTRAMARINE_LITERAL(lit) #lit
 
+/// \exclude
 #define ULTRAMARINE_MAKE_TAG(a, b, i, tag)                                                                  \
-static constexpr auto tag() { return BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)); }
+static constexpr auto tag() { return BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)); }                         \
 
+
+/// \exclude
 #define ULTRAMARINE_MAKE_TUPLE(a, data, i, name)                                                            \
     boost::hana::make_pair(name(), &data::name),                                                            \
 
 
-/// Expands with enclosing actor internal definitions
+/// \brief Expands with enclosing actor internal definitions
+///
+/// Example:
+/// ```cpp
+/// class simple_actor : public ultramarine::actor<simple_actor> {
+/// public:
+///     seastar::future<> my_message() const;
+///     seastar::future<> another_message() const;
+///
+///     ULTRAMARINE_DEFINE_ACTOR(simple_actor, (my_message)(another_message));
+/// };
+/// ```
+/// \unique_name ULTRAMARINE_DEFINE_ACTOR
 #define ULTRAMARINE_DEFINE_ACTOR(name, seq)                                                                 \
 private:                                                                                                    \
       const KeyType key;                                                                                    \

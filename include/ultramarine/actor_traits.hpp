@@ -24,14 +24,21 @@
 
 #pragma once
 
-#include "impl/actor_attributes.hpp"
+#include "actor_attributes.hpp"
 
 namespace ultramarine {
+
+    /// Enum representing the possible kinds of actor
+    /// \unique_name ultramarine::actor_type
     enum class ActorKind {
         SingletonActor,
         LocalActor
     };
 
+    /// Get the actor type
+    /// \tparam Actor The actor type to test against
+    /// \requires Type `Actor` shall inherit from [ultramarine::actor]()
+    /// \returns An enum value of type [ultramarine::actor_type]()
     template <typename Actor>
     constexpr ActorKind actor_kind() {
         if constexpr (std::is_base_of_v<impl::local_actor, Actor>) {
@@ -40,12 +47,21 @@ namespace ultramarine {
         return ActorKind::SingletonActor;
     }
 
+    /// Compile-time trait returning true if the actor type is reentrant
+    /// \requires Type `Actor` shall inherit from [ultramarine::actor]()
+    /// \tparam Actor The actor type to test against
     template<typename Actor>
     constexpr bool is_reentrant_v = !std::is_base_of_v<non_reentrant_actor<Actor>, Actor>;
 
+    /// Compile-time trait returning true if actor type is local
+    /// \requires Type `Actor` shall inherit from [ultramarine::actor]()
+    /// \tparam Actor The actor type to test against
     template<typename Actor>
     constexpr bool is_local_actor_v = std::is_base_of_v<impl::local_actor, Actor>;
 
+    /// Compile-time trait returning true if the local actor type doesn't specify a concurrency limit
+    /// \requires Type `Actor` shall inherit from [ultramarine::local_actor]()
+    /// \tparam Actor The actor type to test against
     template<typename Actor>
     constexpr bool is_unlimited_concurrent_local_actor_v = std::is_base_of_v<local_actor<Actor>, Actor>;
 }

@@ -1,0 +1,17 @@
+title: Ultramarine
+description: Documentation for Ultramarine C++ framework
+
+baseurl: "/ultramarine/"
+url: "https://hippobaro.github.io"
+
+permalink: pretty
+
+remote_theme: pmarsceill/just-the-docs
+search_enabled: true
+
+aux_links:
+  "Ultramarine on GitHub":
+    - "//github.com/hippobaro/Ultramarine"
+
+exclude:
+  - gen.py
