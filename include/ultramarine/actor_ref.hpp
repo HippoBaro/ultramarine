@@ -37,7 +37,7 @@ namespace ultramarine {
 
     template<typename Actor>
     class actor_ref<Actor, ActorKind::SingletonActor> {
-        impl::actor_ref_variant<Actor> impl;
+        const impl::actor_ref_variant<Actor> impl;
     public:
 
         template<typename KeyType>
@@ -80,7 +80,7 @@ namespace ultramarine {
 
     template<typename Actor>
     class actor_ref<Actor, ActorKind::LocalActor> {
-        impl::ActorKey<Actor> key;
+        const impl::ActorKey<Actor> key;
 
     public:
 

@@ -29,46 +29,28 @@
 #include "directory.hpp"
 
 namespace ultramarine::impl {
-    template<typename Impl>
-    struct actor_ref_impl {
-        const std::size_t hash;
-
-        explicit constexpr actor_ref_impl(std::size_t hash) : hash(hash) {}
-
-        template<typename Handler, typename ...Args>
-        constexpr auto tell(Handler message, Args &&... args) const {
-            return static_cast<Impl const *>(this)->schedule(message, std::forward<Args>(args) ...);
-        }
-
-        template<typename Handler>
-        constexpr auto tell(Handler message) const {
-            return static_cast<Impl const *>(this)->schedule(message);
-        };
-    };
-
     template<typename Actor>
-    class collocated_actor_ref : public actor_ref_impl<collocated_actor_ref<Actor>> {
-        ActorKey<Actor> key;
-        seastar::shard_id loc;
+    class collocated_actor_ref {
+        const ActorKey<Actor> key;
+        const std::size_t hash;
+        const seastar::shard_id loc;
 
     public:
         using ActorType = Actor;
 
         template<typename KeyType>
         explicit constexpr collocated_actor_ref(KeyType &&k, std::size_t hash, seastar::shard_id loc):
-                actor_ref_impl<collocated_actor_ref<Actor>>(hash), key(std::forward<KeyType>(k)), loc(loc) {}
-
-        using actor_ref_impl<collocated_actor_ref>::tell;
+                key(std::forward<KeyType>(k)), hash(hash), loc(loc) {}
 
         template<typename Handler>
-        inline constexpr auto schedule(Handler message) const {
+        inline constexpr auto tell(Handler message) const {
             return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message] {
                 return actor_directory<Actor>::dispatch_message(k, h, message);
             });
         }
 
         template<typename Handler, typename ...Args>
-        inline constexpr auto schedule(Handler message, Args &&... args) const {
+        inline constexpr auto tell(Handler message, Args &&... args) const {
             return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message, args = std::make_tuple(
                     std::forward<Args>(args) ...)]() mutable {
                 return std::apply([&k, h, message](auto &&... args) {
@@ -79,22 +61,20 @@ namespace ultramarine::impl {
     };
 
     template<typename Actor>
-    class local_actor_ref : public actor_ref_impl<local_actor_ref<Actor>> {
-        ActorKey<Actor> key;
-        Actor *inst = nullptr;
+    class local_actor_ref {
+        const ActorKey<Actor> key;
+        const std::size_t hash;
+        const Actor *inst = nullptr;
 
     public:
         using ActorType = Actor;
 
         template<typename KeyType>
         explicit constexpr local_actor_ref(KeyType &&k, std::size_t hash) :
-                actor_ref_impl<local_actor_ref<Actor>>{hash}, key(std::forward<KeyType>(k)),
-                inst(actor_directory<Actor>::hold_activation(key, hash)) {};
-
-        using actor_ref_impl<local_actor_ref<Actor>>::tell;
+                key(std::forward<KeyType>(k)), hash(hash), inst(actor_directory<Actor>::hold_activation(key, hash)) {};
 
         template<typename Handler>
-        inline constexpr auto schedule(Handler message) const {
+        inline constexpr auto tell(Handler message) const {
             const auto cpu = seastar::engine().cpu_id();
             return seastar::smp::submit_to(cpu, [k = this->key, h = this->hash, message] {
                 return actor_directory<Actor>::dispatch_message(k, h, message);
@@ -102,7 +82,7 @@ namespace ultramarine::impl {
         }
 
         template<typename Handler, typename ...Args>
-        inline constexpr auto schedule(Handler message, Args &&... args) const {
+        inline constexpr auto tell(Handler message, Args &&... args) const {
             const auto cpu = seastar::engine().cpu_id();
             return seastar::smp::submit_to(cpu, [k = this->key, h = this->hash, message, args = std::make_tuple(
                     std::forward<Args>(args) ...)]() mutable {
