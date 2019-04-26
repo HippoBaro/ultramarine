@@ -126,10 +126,8 @@ namespace ultramarine {
         };
     };
 
-    template<typename Actor, typename KeyType>
+    template<typename Actor, typename KeyType = typename Actor::Keytype>
     [[nodiscard]] constexpr inline actor_ref<Actor> get(KeyType &&key) noexcept {
-        static_assert(std::is_constructible<impl::ActorKey<Actor>,
-                KeyType &&>::value, "The provided key is not compatible with the Actor");
         return actor_ref<Actor>(std::forward<KeyType>(key));
     }
 }
