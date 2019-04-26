@@ -25,7 +25,6 @@
 #pragma once
 
 #include <ultramarine/actor_traits.hpp>
-#include "ultramarine/actor.hpp"
 #include "ultramarine/directory.hpp"
 
 namespace ultramarine::impl {
