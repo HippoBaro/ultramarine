@@ -35,6 +35,8 @@ static constexpr auto tag() { return BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag))
 #define ULTRAMARINE_MAKE_TUPLE(a, data, i, name)                                                            \
     boost::hana::make_pair(name(), &data::name),                                                            \
 
+
+/// Expands with enclosing actor internal definitions
 #define ULTRAMARINE_DEFINE_ACTOR(name, seq)                                                                 \
 private:                                                                                                    \
       const KeyType key;                                                                                    \
