@@ -57,7 +57,7 @@ namespace ultramarine {
 
     template<typename Func>
     auto with_buffer(std::size_t capacity, Func &&func) {
-        return seastar::do_with(message_buffer<seastar::future<>>(capacity), [func = std::move(func)] (auto &buff) {
+        return seastar::do_with(message_buffer<seastar::future<>>(capacity), [func = std::forward<Func>(func)] (auto &buff) {
             return func(buff).then([&buff] { return buff.flush(); });
         });
     }
