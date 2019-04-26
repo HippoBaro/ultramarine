@@ -43,7 +43,7 @@ public:                                                                         
       struct message {                                                                                      \
           BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG, name, seq)                                          \
 private:                                                                                                    \
-      friend class ultramarine::vtable<name>;                                                               \
+      friend class ultramarine::impl::vtable<name>;                                                         \
       static constexpr auto make_vtable() {                                                                 \
         return boost::hana::make_map(                                                                       \
             BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                                      \

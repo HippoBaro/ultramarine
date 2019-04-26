@@ -41,9 +41,6 @@ namespace ultramarine {
     }
 
     template<typename Actor>
-    constexpr bool is_actor_v = std::is_base_of_v<actor, Actor>;
-
-    template<typename Actor>
     constexpr bool is_reentrant_v = !std::is_base_of_v<non_reentrant_actor<Actor>, Actor>;
 
     template<typename Actor>

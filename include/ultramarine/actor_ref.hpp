@@ -26,6 +26,7 @@
 
 #include <variant>
 #include "actor.hpp"
+#include "impl/directory.hpp"
 #include "impl/actor_ref_impl.hpp"
 
 namespace ultramarine {
@@ -79,7 +80,7 @@ namespace ultramarine {
 
     template<typename Actor>
     class actor_ref<Actor, ActorKind::LocalActor> {
-        ActorKey<Actor> key;
+        impl::ActorKey<Actor> key;
 
     public:
 
@@ -101,7 +102,7 @@ namespace ultramarine {
                        % (seastar::smp::count < Actor::max_activations ? seastar::smp::count : Actor::max_activations);
             }
 
-            return impl::do_with_actor_ref_impl<Actor, ActorKey<Actor>>(key, next, [&func] (auto const& impl) {
+            return impl::do_with_actor_ref_impl<Actor, impl::ActorKey<Actor>>(key, next, [&func] (auto const& impl) {
                 return func(impl);
             });
         }
@@ -127,7 +128,7 @@ namespace ultramarine {
 
     template<typename Actor, typename KeyType>
     [[nodiscard]] constexpr inline actor_ref<Actor> get(KeyType &&key) noexcept {
-        static_assert(std::is_constructible<ActorKey<Actor>,
+        static_assert(std::is_constructible<impl::ActorKey<Actor>,
                 KeyType &&>::value, "The provided key is not compatible with the Actor");
         return actor_ref<Actor>(std::forward<KeyType>(key));
     }
