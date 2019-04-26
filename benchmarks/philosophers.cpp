@@ -34,57 +34,58 @@ public:
 ULTRAMARINE_DEFINE_ACTOR(arbitrator_actor, (hungry)(done));
     std::array<bool, PhilosopherLen> forks{};
 
-    seastar::future<bool> hungry(int philosopher_index);
+    seastar::future<bool> hungry(int philosopher_index) {
+        auto &leftFork = forks[philosopher_index];
+        auto &rightFork = forks[(philosopher_index + 1) % PhilosopherLen];
 
-    void done(int philosopher_index);
+        if (leftFork || rightFork) {
+            return seastar::make_ready_future<bool>(false);
+        } else {
+            return seastar::make_ready_future<bool>(leftFork = rightFork = true);
+        }
+    }
+
+    void done(int philosopher_index) {
+        forks[philosopher_index] = false;
+        forks[(philosopher_index + 1) % PhilosopherLen] = false;
+    }
 };
+
+std::atomic<int> failed_attempts = 0;
 
 class philosopher_actor : public ultramarine::actor<philosopher_actor> {
 public:
 ULTRAMARINE_DEFINE_ACTOR(philosopher_actor, (start));
     int round = 0;
 
-    seastar::future<> start();
-};
-
-seastar::future<bool> arbitrator_actor::hungry(int philosopher_index) {
-    auto &leftFork = forks[philosopher_index];
-    auto &rightFork = forks[(philosopher_index + 1) % PhilosopherLen];
-
-    if (leftFork || rightFork) {
-        return seastar::make_ready_future<bool>(false);
-    } else {
-        return seastar::make_ready_future<bool>(leftFork = rightFork = true);
-    }
-}
-
-void arbitrator_actor::done(int philosopher_index) {
-    forks[philosopher_index] = false;
-    forks[(philosopher_index + 1) % PhilosopherLen] = false;
-}
-
-seastar::future<> philosopher_actor::start() {
-    return ultramarine::get<arbitrator_actor>(0).visit([this] (auto const& arbitrator) {
-        return seastar::do_until([this] { return round >= RoundLen; }, [this, &arbitrator] {
-            return arbitrator.tell(arbitrator_actor::message::hungry(), this->key).then([this, &arbitrator](bool allowed) {
-                if (allowed) {
-                    ++round;
-                    return arbitrator.tell(arbitrator_actor::message::done(), this->key);
-                }
-                return seastar::make_ready_future();
+    seastar::future<> start() {
+        return ultramarine::get<arbitrator_actor>(0).visit([this](auto const &arbitrator) {
+            return seastar::do_until([this] { return round >= RoundLen; }, [this, &arbitrator] {
+                return arbitrator.tell(arbitrator_actor::message::hungry(), this->key).then(
+                        [this, &arbitrator](bool allowed) {
+                            if (allowed) {
+                                ++round;
+                                return arbitrator.tell(arbitrator_actor::message::done(), this->key);
+                            }
+                            ++failed_attempts;
+                            return seastar::make_ready_future();
+                        });
             });
         });
-    });
-}
+    }
+};
 
 seastar::future<> dinning_philosophers() {
+    failed_attempts = 0;
     return philosopher_actor::clear_directory().then([] {
         return arbitrator_actor::clear_directory().then([] {
             std::vector<seastar::future<>> futs;
             for (int j = 0; j < PhilosopherLen; ++j) {
                 futs.emplace_back(ultramarine::get<philosopher_actor>(j).tell(philosopher_actor::message::start()));
             }
-            return seastar::when_all(std::begin(futs), std::end(futs)).discard_result();
+            return seastar::when_all(std::begin(futs), std::end(futs)).then([](auto const &) {
+                seastar::print("performed a total of %d failed attempt\n", failed_attempts.load());
+            });
         });
     });
 }
