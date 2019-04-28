@@ -15,3 +15,4 @@ aux_links:
 
 exclude:
   - gen.py
+  - standardese.config

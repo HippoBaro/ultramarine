@@ -42,14 +42,14 @@ endif ()
 
 # Documentation
 if (${ULTRAMARINE_BUILD_DOC})
-    if(NOT DEFINED STANDARDESE_DIR)
+    if (NOT DEFINED STANDARDESE_DIR)
         message(FATAL_ERROR "STANDARDESE_DIR is not defined")
-    endif()
+    endif ()
     set(STANDARDESE_TOOL ${STANDARDESE_DIR}/build/tool/standardese)
     include(${STANDARDESE_DIR}/standardese-config.cmake)
 
     get_target_property(includes Seastar::seastar INTERFACE_INCLUDE_DIRECTORIES)
-    standardese_generate(ultramarine-actor CONFIG standardese.config INCLUDE_DIRECTORY ${includes} include INPUT include)
+    standardese_generate(ultramarine-actor CONFIG docs/standardese.config INCLUDE_DIRECTORY ${includes} include INPUT include)
 
     add_custom_command(TARGET standardese_ultramarine-actor POST_BUILD
             COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/docs/gen.py
