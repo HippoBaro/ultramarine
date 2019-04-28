@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 option(ULTRAMARINE_BUILD_APPS "Include apps/ as part of the build" ON)
 option(ULTRAMARINE_BUILD_UNITTESTS "Include tests/ as part of the build" ON)
 option(ULTRAMARINE_BUILD_BENCHMARKS "Include benchmarks/ as part of the build" ON)
-option(ULTRAMARINE_BUILD_DOC "Generate API definitions in docs/" ON)
+option(ULTRAMARINE_BUILD_DOC "Generate API definitions in docs/" OFF)
 
 # Dependencies
 find_package(Seastar 1.0 REQUIRED)

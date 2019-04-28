@@ -1,0 +1,34 @@
+version: 2.1
+jobs:
+  build_and_test:
+    parameters:
+      dialect:
+        description: C++ dialect to build with
+        default: gnu++17
+        type: string
+    docker:
+      - image: scylladb/seastar-toolchain
+    steps:
+      - checkout
+      - run: git submodule sync
+      - run: git submodule update --init --recursive
+      - run:
+          command: |
+            cd third-party/seastar
+            ./configure.py --mode=release --c++-dialect << parameters.dialect >>
+            ninja seastar -C build/release -j2
+            ninja seastar_testing -C build/release -j2
+      - run:
+          command: |
+            ./cooking.sh -e Seastar -t Release -- -DULTRAMARINE_BUILD_DOC=OFF -DCMAKE_PREFIX_PATH="`pwd`/third-party/seastar/build/release;`pwd`/third-party/seastar/build/release/_cooking/installed" -DCMAKE_MODULE_PATH="`pwd`/third-party/seastar/cmake"
+            ninja -C build -j2
+            ninja ultramarine-tests -C build -j2
+      - run:
+          command: |
+            cd build && ctest --progress
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build_and_test:
+          dialect: c++17
