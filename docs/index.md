@@ -1,5 +1,6 @@
 ---
-title: Introduction
+title: Getting Started
+nav_order: 1
 ---
 
 # Ultramarine
@@ -25,7 +26,7 @@ Ultramarine is build upon [Seastar](https://github.com/scylladb/seastar) and sha
 To pull Seastar and configure Ultramarine:
 
 ```
-./cooking.sh -e Seastar -t Release
+./cooking.sh -t Release
 ```
 
 And to build the examples:
@@ -40,7 +41,7 @@ Various guides, examples and API reference are [available here](https://hippobar
 
 ### Code Example
 
-First we need to define an actor:
+First we need to define an [actor](api/doc_ultramarine__actor.md#standardese-ultramarine__actor):
 
 ```cpp
 class hello_actor : public ultramarine::actor<hello_actor> {
@@ -56,12 +57,12 @@ public:
 };
 ```
 
-And then call the actor activation from anywhere in code:
+And then call the actor activation from anywhere in your seastar code using an [actor_ref](api/doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-):
 
 ```cpp
 auto ref = ultramarine::get<hello_actor>("Ultramarine");
 auto future = ref.tell(hello_actor::message::say_hello());
-/// wait or attach a continuation to the returned future.
+// wait or attach a continuation to the returned future.
 ```
 
 ### License
