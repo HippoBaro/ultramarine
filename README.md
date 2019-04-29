@@ -36,7 +36,7 @@ Various guides, examples and API reference are [available here](https://hippobar
 
 ### Code Example
 
-First we need to define an [`actor`](https://hippobaro.github.io/ultramarine/api/doc_ultramarine__actor.md#standardese-ultramarine__actor):
+First we need to define an [`actor`](https://hippobaro.github.io/ultramarine/api/doc_ultramarine__actor/):
 
 ```cpp
 class hello_actor : public ultramarine::actor<hello_actor> {
@@ -52,7 +52,7 @@ public:
 };
 ```
 
-And then call the actor activation from anywhere in your seastar code using an [actor_ref](https://hippobaro.github.io/ultramarine/api/doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-):
+And then call the actor activation from anywhere in your seastar code using an [actor_ref](https://hippobaro.github.io/ultramarine/api/doc_ultramarine__actor_ref#standardese-ultramarine__actor_ref-Actor-):
 
 ```cpp
 auto ref = ultramarine::get<hello_actor>("Ultramarine");
@@ -72,7 +72,7 @@ Mean Execution Time        | Standard deviation
 ---------------------------|--------------------
 ![](https://hippobaro.github.io/ultramarine/assets/big_met.png)    | ![](https://hippobaro.github.io/ultramarine/assets/big_std.png)
 
-More information and benchmarks are [available here](https://hippobaro.github.io/ultramarine/benchmarks.md).
+More information and benchmarks are [available here](https://hippobaro.github.io/ultramarine/benchmarks).
 
 ### License
 
