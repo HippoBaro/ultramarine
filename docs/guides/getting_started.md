@@ -4,7 +4,6 @@ nav_order: 2
 layout: default
 has_children: true
 permalink: /getting_started
-nav_order: 99
 nav_no_fold : true
 ---
 
