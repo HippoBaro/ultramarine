@@ -1,5 +1,5 @@
 ---
-title: Getting Started
+title: Read Me
 nav_order: 1
 ---
 
@@ -21,7 +21,7 @@ It is heavily inspired by the [Microsoft Orleans](https://dotnet.github.io/orlea
 
 ### Installation
 
-Ultramarine is build upon [Seastar](https://github.com/scylladb/seastar) and share the same dependencies. Seastar provides a convenience script to pull all necessary packages (`install-dependencies.sh`).
+Ultramarine is built upon [Seastar](https://github.com/scylladb/seastar) and share the same dependencies. Seastar provides a convenience script to pull all necessary packages (`install-dependencies.sh`).
 
 To pull Seastar and configure Ultramarine:
 
@@ -29,7 +29,7 @@ To pull Seastar and configure Ultramarine:
 ./cooking.sh -t Release
 ```
 
-And to build the examples:
+To build the examples:
 
 ```
 ninja -C build
@@ -41,7 +41,7 @@ Various guides, examples and API reference are [available here](https://hippobar
 
 ### Code Example
 
-First we need to define an [actor](api/doc_ultramarine__actor.md#standardese-ultramarine__actor):
+First we need to define an [`actor`](api/doc_ultramarine__actor.md#standardese-ultramarine__actor):
 
 ```cpp
 class hello_actor : public ultramarine::actor<hello_actor> {
