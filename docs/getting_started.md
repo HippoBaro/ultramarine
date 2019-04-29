@@ -24,14 +24,14 @@ Ultramarine differs from other actor system implementations in a few key points:
 
 ## Developing a simple actor application
 
-As an example, let's create a simple program computing different Fibonacci index numbers.
+As an example, let's create a simple program computing different [Fibonacci numbers](https://en.wikipedia.org/wiki/Fibonacci_number).
 
 In this example, we will use the naive divide-and-conquer approach of spawning actors, each responsible for computing a single index number.
 They then spawn other actors, as necessary. We can visualize the computation as such:
 
 ![](https://upload.wikimedia.org/wikipedia/commons/a/a3/Call_Tree_for_Fibonacci_Number_F6.svg)
 
-Here is an empty `fibinacci_actor` actor definition:
+Here is an empty `fibonacci_actor` actor definition:
 
 ```cpp
 class fibonacci_actor : public ultramarine::actor<fibonacci_actor> {
@@ -57,7 +57,7 @@ return ref.tell(fibonacci_actor::message::fib()).then([] (int value) {
 
 An [`actor reference`](/api/doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) is a trivial object that you can use to refer to an actor. They are forgeable, copiable and movable. Because Ultramarine is a [Virtual Actor](http://research.microsoft.com/apps/pubs/default.aspx?id=210931) framework, you do not need to *create* any actor. They are created as needed.
 
-Now that the interface and calling site for our actor is set-up, we can implement `fibonacci_actor::fib`:
+Now that the interface and calling site for our actor are set-up, we can implement `fibonacci_actor::fib`:
 
 ```cpp
 seastar::future<int> fibonacci_actor::fib() {
@@ -73,13 +73,13 @@ seastar::future<int> fibonacci_actor::fib() {
 }
 ```
 
-That's it! To compute our Fibonacci number, we divide the problem in two and delegate it to two other actors. Once they are done, we combine the result and return. Better yet, this code is natively multi-threaded, because all actors are evenly spread throughout all available hardware.
+That's it! To compute our Fibonacci number, we divide the problem in two and delegate to two other actors. Once they are done, we combine the result and return. Better yet, this code is natively multi-threaded, because all actors are evenly spread throughout all available hardware.
 
 ## Taking advantage of virtual actors
 
 In the last section, we developed a *naive* implementation of a Fibonacci sequence actor. Naive because, generally, a proper *recursive* implementation should use memoization to cache intermediate results, and speed-up the computation.
 
-However, at first sight, a memoization approach will be difficult under the rules of the actor model where sharing memory (a cache, for example) is forbidden. We could create a central actor and have it act as a cache actor, but it would introduce a central bottleneck.
+However, at first sight, a memoization approach will be difficult to implement under the rules of the actor model where sharing memory (a cache, for example) is forbidden. We could create a central cache actor, but because actors are single-threaded by design, it would introduce a central bottleneck.
 
 Fortunately, a virtual actor model provides *horizontal* actors. Therefore, in Ultramarine, two calls to `ultramarine::get<fibonacci_actor>(index_number)` will always point to the same actor. We can take advantage of this by having each actor remember it's value.
 
@@ -94,7 +94,7 @@ public:
 };
 ```
 
-The variable `result` can now store the Fibonacci number specific to this actor. We modify our message handler to store its result and reuse it upon further message:
+The variable `result` can now store the Fibonacci number specific to this actor. We modify our message handler to store its result and reuse it upon further messages:
 
 ```cpp
 seastar::future<int> fibonacci_actor::fib() {
