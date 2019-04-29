@@ -73,6 +73,14 @@ Mean Execution Time        | Standard deviation
 
 More information and benchmarks are [available here](https://hippobaro.github.io/ultramarine/benchmarks).
 
+# Going forward
+
+Ultramarine is a small project and currently lacks:
+- [ ] **Clustering.** An actor system on a local machine is nice, but the concept shines when actors are allowed to migrate across a set of clustered machines freely.
+- [ ] **Persistence.** Actors could write their states in storage or non-volatile memory to provide failure-safety.
+- [ ] **Steaming.** Message-passing doesn't always map well to domain-specific problems. A streaming API would be nice to have.
+- [ ] **Actor as heterogeneous compute abstraction.** Actors are useful to abstract over hardware because the abstraction's requirements are very loose. [CAF](https://actor-framework.org/) has demonstrated that actors work well to abstract a GPU.
+
 # License
 
 This project is licensed under the [MIT license](https://github.com/HippoBaro/ultramarine/blob/master/LICENSE).
