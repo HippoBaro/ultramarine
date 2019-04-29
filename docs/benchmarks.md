@@ -12,22 +12,22 @@ We use several benchmarks to evaluate different aspects of performance. Descript
 
 Mean Execution Time | Messages Per Second
 ---------------------------|--------------------
-![](assets/pingpong_met.png) | ![](assets/message_freq_one_one.png)
+[![](assets/pingpong_met.png)](../assets/pingpong_met.png) | [![](assets/message_freq_one_one.png)](../assets/message_freq_one_one.png)
 
 ## [Fork-Join Throughput](https://github.com/HippoBaro/ultramarine/blob/master/benchmarks/fork-join_throughput.cpp) (one-to-many)
 
 Mean Execution Time | Messages Per Second
 ---------------------------|--------------------
-![](assets/fjthroughput_met.png) | ![](assets/message_freq_one_many.png)
+[![](assets/fjthroughput_met.png)](../assets/fjthroughput_met.png) | [![](assets/message_freq_one_many.png)](../assets/message_freq_one_many.png)
 
 ## [Dinning philosophers](https://github.com/HippoBaro/ultramarine/blob/master/benchmarks/philosophers.cpp) (many-to-one)
 
 Mean Execution Time | Messages Per Second
 ---------------------------|--------------------
-![](assets/philo_met.png) | ![](assets/message_freq_many_one.png)
+[![](assets/philo_met.png)](../assets/philo_met.png) | [![](assets/message_freq_many_one.png)](../assets/message_freq_many_one.png)
 
 ## [Big](https://github.com/HippoBaro/ultramarine/blob/master/benchmarks/big.cpp) (many-to-many)
 
 Mean Execution Time | Messages Per Second
 ---------------------------|--------------------
-![](assets/big_met.png) | ![](assets/message_freq_many_many.png)
+[![](assets/big_met.png)](../assets/big_met.png) | [![](assets/message_freq_many_many.png)](../assets/message_freq_many_many.png)

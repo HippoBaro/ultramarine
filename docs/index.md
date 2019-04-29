@@ -5,9 +5,9 @@ nav_order: 1
 
 # Ultramarine
 
-![CircleCI branch](https://img.shields.io/circleci/project/github/HippoBaro/ultramarine/master.svg?color=%23120a8f&style=for-the-badge)
-![Licence](https://img.shields.io/github/license/HippoBaro/ultramarine.svg?color=%23120a8f&style=for-the-badge)
-![GitHub release](https://img.shields.io/github/release/HippoBaro/ultramarine.svg?color=%23120a8f&style=for-the-badge)
+[![CircleCI branch](https://img.shields.io/circleci/project/github/HippoBaro/ultramarine/master.svg?color=%23120a8f&style=for-the-badge)](https://circleci.com/gh/HippoBaro/ultramarine)
+[![Licence](https://img.shields.io/github/license/HippoBaro/ultramarine.svg?color=%23120a8f&style=for-the-badge)](https://github.com/HippoBaro/ultramarine/blob/master/LICENSE)
+[![GitHub release](https://img.shields.io/github/release/HippoBaro/ultramarine.svg?color=%23120a8f&style=for-the-badge)](https://github.com/HippoBaro/ultramarine/releases)
 
 ## Introduction
 
