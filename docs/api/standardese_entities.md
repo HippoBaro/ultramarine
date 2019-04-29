@@ -4,7 +4,6 @@ layout: default
 has_children: true
 permalink: /api
 nav_order: 99
-nav_no_fold : true
 ---
 
 # Project index
