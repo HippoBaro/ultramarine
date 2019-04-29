@@ -9,7 +9,7 @@ parent: API index
 #define ULTRAMARINE_DEFINE_ACTOR(name, seq)
 ```
 
-## Macro `ULTRAMARINE_DEFINE_ACTOR`
+# Macro `ULTRAMARINE_DEFINE_ACTOR`
 
 ``` cpp
 #define ULTRAMARINE_DEFINE_ACTOR(name, seq)

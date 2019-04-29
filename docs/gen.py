@@ -9,7 +9,12 @@ def edit_header_file(filename):
         content = f.read()
         f.seek(0)
         f.truncate()
+        # Rename file
         content_new = re.sub('(?s)Header file `(\w+/[^`]*)`', r'\1', content, flags=re.M)
+        # Remove redundant markdown separators
+        content_new = re.sub('-{5}\n\n(-{5}\n+)+', r'\1', content_new, flags=re.M)
+        # Fix headings hierarchy
+        content_new = re.sub('\n#(#+)', r'\n\1', content_new, flags=re.M)
         f.write("---\n"
                 "layout: default\n"
                 "parent: API index\n"

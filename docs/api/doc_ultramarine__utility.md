@@ -16,7 +16,7 @@ namespace ultramarine
 }
 ```
 
-### Struct `ultramarine::message_buffer`
+## Struct `ultramarine::message_buffer`
 
 ``` cpp
 template <typename Future>
@@ -38,7 +38,7 @@ struct message_buffer
 
 A dynamic message buffer storing a set number of futures running concurrently
 
-### Template parameter `ultramarine::message_buffer::Future`
+## Template parameter `ultramarine::message_buffer::Future`
 
 ``` cpp
 typename Future
@@ -50,7 +50,7 @@ The future type the message buffer will store
 
 -----
 
-### Function `ultramarine::message_buffer::operator()`
+## Function `ultramarine::message_buffer::operator()`
 
 ``` cpp
 auto operator()(Future&& fut);
@@ -58,7 +58,7 @@ auto operator()(Future&& fut);
 
 Push a future in the message buffer
 
-### Parameter `ultramarine::message_buffer::fut`
+## Parameter `ultramarine::message_buffer::fut`
 
 ``` cpp
 Future&& fut
@@ -70,9 +70,7 @@ The future to push in the message buffer
 
 -----
 
------
-
-### Function `ultramarine::message_buffer::flush`
+## Function `ultramarine::message_buffer::flush`
 
 ``` cpp
 auto flush();
@@ -84,9 +82,7 @@ Flush the message buffer such that all future it contains are in an available or
 
 -----
 
------
-
-### Function `ultramarine::with_buffer`
+## Function `ultramarine::with_buffer`
 
 ``` cpp
 template <typename Func>
@@ -95,11 +91,11 @@ auto with_buffer(std::size_t capacity, Func&& func);
 
 Create a dynamic message buffer to use in a specified function scope
 
-#### Parameters
+### Parameters
 
   - `capacity` - The number of message the buffer should be able to store before awaiting
 
-### Parameter `ultramarine::func`
+## Parameter `ultramarine::func`
 
 ``` cpp
 Func&& func
@@ -108,7 +104,5 @@ Func&& func
 A lambda function using the message buffer
 
 *Returns:* Any value returned by the provided lambda function
-
------
 
 -----

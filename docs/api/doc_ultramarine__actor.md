@@ -13,7 +13,7 @@ namespace ultramarine
 }
 ```
 
-### Struct `ultramarine::actor`
+## Struct `ultramarine::actor`
 
 ``` cpp
 template <typename Derived, typename LocalPlacementStrategy = default_local_placement_strategy>
@@ -29,11 +29,11 @@ struct actor
 
 Base template class defining an actor
 
-#### Template parameters
+### Template parameters
 
   - `Derived` - The derived actor class for CRTP purposes
 
-### Template parameter `ultramarine::actor::LocalPlacementStrategy`
+## Template parameter `ultramarine::actor::LocalPlacementStrategy`
 
 ``` cpp
 typename LocalPlacementStrategy = default_local_placement_strategy
@@ -45,7 +45,7 @@ Optional. Allows to specify a custom local placement strategy. Defaults to [`ult
 
 -----
 
-### Type alias `ultramarine::actor::KeyType`
+## Type alias `ultramarine::actor::KeyType`
 
 ``` cpp
 using KeyType = ultramarine::actor_id;
@@ -55,7 +55,7 @@ Default key type (unsigned long integer) See [`ultramarine::actor_id`](doc_ultra
 
 -----
 
-### Type alias `ultramarine::actor::PlacementStrategy`
+## Type alias `ultramarine::actor::PlacementStrategy`
 
 ``` cpp
 using PlacementStrategy = LocalPlacementStrategy;
@@ -65,7 +65,7 @@ Default placement strategy
 
 -----
 
-### Function `ultramarine::actor::clear_directory`
+## Function `ultramarine::actor::clear_directory`
 
 ``` cpp
 static seastar::future<> clear_directory();
@@ -74,7 +74,5 @@ static seastar::future<> clear_directory();
 *Effects:* Clears all actors of type Derived in all shards
 
 *Returns:* A future available when all instances of this actor type have been purged
-
------
 
 -----

@@ -23,7 +23,7 @@ namespace ultramarine
 }
 ```
 
-### Enumeration `ultramarine::ActorKind`
+## Enumeration `ultramarine::ActorKind`
 
 ``` cpp
 enum class ActorKind
@@ -37,7 +37,7 @@ Enum representing the possible kinds of actor
 
 -----
 
-### Function `ultramarine::actor_kind`
+## Function `ultramarine::actor_kind`
 
 ``` cpp
 template <typename Actor>
@@ -46,7 +46,7 @@ constexpr ultramarine::ActorKind actor_kind();
 
 Get the actor type
 
-### Template parameter `ultramarine::Actor`
+## Template parameter `ultramarine::Actor`
 
 ``` cpp
 typename Actor
@@ -60,9 +60,7 @@ The actor type to test against
 
 -----
 
------
-
-### Unexposed entity `ultramarine::is_reentrant_v`
+## Unexposed entity `ultramarine::is_reentrant_v`
 
 ``` cpp
 template <typename Actor>constexpr bool is_reentrant_v = !std::is_base_of_v<non_reentrant_actor<Actor>, Actor>;
@@ -74,7 +72,7 @@ Compile-time trait returning true if the actor type is reentrant
 
 -----
 
-### Unexposed entity `ultramarine::is_local_actor_v`
+## Unexposed entity `ultramarine::is_local_actor_v`
 
 ``` cpp
 template <typename Actor>constexpr bool is_local_actor_v = std::is_base_of_v<impl::local_actor, Actor>;
@@ -86,7 +84,7 @@ Compile-time trait returning true if actor type is local
 
 -----
 
-### Unexposed entity `ultramarine::is_unlimited_concurrent_local_actor_v`
+## Unexposed entity `ultramarine::is_unlimited_concurrent_local_actor_v`
 
 ``` cpp
 template <typename Actor>constexpr bool is_unlimited_concurrent_local_actor_v = std::is_base_of_v<local_actor<Actor>, Actor>;

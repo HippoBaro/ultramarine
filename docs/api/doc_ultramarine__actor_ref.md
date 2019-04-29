@@ -24,7 +24,7 @@ namespace ultramarine
 }
 ```
 
-### Class `ultramarine::actor_ref`
+## Class `ultramarine::actor_ref`
 
 ``` cpp
 template <ultramarine::ActorKind = actor_kind<Actor>()>
@@ -37,7 +37,7 @@ A movable and copyable reference to a virtual actor
 
 -----
 
-### Class `ultramarine::actor_ref`
+## Class `ultramarine::actor_ref`
 
 ``` cpp
 template <typename Actor>
@@ -68,7 +68,7 @@ public:
 
 A movable and copyable reference to a virtual actor
 
-### Template parameter `ultramarine::actor_ref::Actor`
+## Template parameter `ultramarine::actor_ref::Actor`
 
 ``` cpp
 typename Actor
@@ -80,7 +80,7 @@ The type of actor to reference
 
 -----
 
-### Function `ultramarine::actor_ref::visit`
+## Function `ultramarine::actor_ref::visit`
 
 ``` cpp
 template <typename Func>
@@ -89,7 +89,7 @@ constexpr auto visit(Func&& func) const noexcept;
 
 Obtain the concrete actor\_ref implementation
 
-### Parameter `ultramarine::actor_ref::func`
+## Parameter `ultramarine::actor_ref::func`
 
 ``` cpp
 Func&& func
@@ -101,9 +101,7 @@ A lambda to execute with the actor\_ref implementation
 
 -----
 
------
-
-### Function `ultramarine::actor_ref::tell`
+## Function `ultramarine::actor_ref::tell`
 
 ``` cpp
 template <typename Handler, typename ... Args>
@@ -114,7 +112,7 @@ Enqueue a message to the actor referenced by this actor\_ref instance
 
 *Effects:* Creates the actor if it doesn’t exist
 
-### Parameter `ultramarine::actor_ref::message`
+## Parameter `ultramarine::actor_ref::message`
 
 ``` cpp
 Handler message
@@ -126,9 +124,7 @@ The message handler to enqueue
 
 -----
 
------
-
-### Function `ultramarine::actor_ref::tell`
+## Function `ultramarine::actor_ref::tell`
 
 ``` cpp
 template <typename Handler>
@@ -139,7 +135,7 @@ Enqueue a message to the actor referenced by this actor\_ref instance
 
 *Effects:* Creates the actor if it doesn’t exist
 
-### Parameter `ultramarine::actor_ref::message`
+## Parameter `ultramarine::actor_ref::message`
 
 ``` cpp
 Handler message
@@ -151,11 +147,7 @@ The message handler to enqueue
 
 -----
 
------
-
------
-
-### Class `ultramarine::actor_ref`
+## Class `ultramarine::actor_ref`
 
 ``` cpp
 template <typename Actor>
@@ -182,7 +174,7 @@ public:
 
 A movable and copyable reference to a virtual actor
 
-### Template parameter `ultramarine::actor_ref::Actor`
+## Template parameter `ultramarine::actor_ref::Actor`
 
 ``` cpp
 typename Actor
@@ -194,7 +186,7 @@ The type of actor to reference
 
 -----
 
-### Function `ultramarine::actor_ref::visit`
+## Function `ultramarine::actor_ref::visit`
 
 ``` cpp
 template <typename Func>
@@ -203,7 +195,7 @@ constexpr auto visit(Func&& func) const noexcept;
 
 Obtain the concrete actor\_ref implementation
 
-### Parameter `ultramarine::actor_ref::func`
+## Parameter `ultramarine::actor_ref::func`
 
 ``` cpp
 Func&& func
@@ -215,9 +207,7 @@ A lambda to execute with the actor\_ref implementation
 
 -----
 
------
-
-### Function `ultramarine::actor_ref::tell`
+## Function `ultramarine::actor_ref::tell`
 
 ``` cpp
 template <typename Handler, typename ... Args>
@@ -228,11 +218,11 @@ Enqueue a message to the actor referenced by this actor\_ref instance
 
 *Effects:* Creates the actor if it doesn’t exist
 
-#### Parameters
+### Parameters
 
   - `message` - The message handler to enqueue
 
-### Parameter `ultramarine::actor_ref::args`
+## Parameter `ultramarine::actor_ref::args`
 
 ``` cpp
 Args &&... args
@@ -244,9 +234,7 @@ Arguments to pass to the message handler
 
 -----
 
------
-
-### Function `ultramarine::actor_ref::tell`
+## Function `ultramarine::actor_ref::tell`
 
 ``` cpp
 template <typename Handler>
@@ -257,7 +245,7 @@ Enqueue a message to the actor referenced by this actor\_ref instance
 
 *Effects:* Creates the actor if it doesn’t exist
 
-### Parameter `ultramarine::actor_ref::message`
+## Parameter `ultramarine::actor_ref::message`
 
 ``` cpp
 Handler message
@@ -269,11 +257,7 @@ The message handler to enqueue
 
 -----
 
------
-
------
-
-### Function `ultramarine::get`
+## Function `ultramarine::get`
 
 ``` cpp
 template <typename Actor, typename KeyType = typename Actor::Keytype>
@@ -282,7 +266,7 @@ constexpr actor_ref<Actor> get(KeyType&& key) noexcept;
 
 Create a reference to a virtual actor
 
-### Template parameter `ultramarine::Actor`
+## Template parameter `ultramarine::Actor`
 
 ``` cpp
 typename Actor
@@ -294,7 +278,7 @@ The type of actor to reference
 
 -----
 
-### Parameter `ultramarine::key`
+## Parameter `ultramarine::key`
 
 ``` cpp
 KeyType&& key
@@ -303,7 +287,5 @@ KeyType&& key
 The primary key of the actor
 
 *Returns:* A [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-)
-
------
 
 -----

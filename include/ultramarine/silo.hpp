@@ -27,6 +27,7 @@
 #include <seastar/core/future.hh>
 #include <seastar/core/sharded.hh>
 
+/// \exclude
 namespace ultramarine {
     /// \exclude
     class silo {

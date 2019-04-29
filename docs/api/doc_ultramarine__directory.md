@@ -16,7 +16,7 @@ namespace ultramarine
 }
 ```
 
-### Type alias `ultramarine::actor_id`
+## Type alias `ultramarine::actor_id`
 
 ``` cpp
 using actor_id = std::size_t;
@@ -26,7 +26,7 @@ Actors are fetched internally via an unsigned integer id
 
 -----
 
-### Struct `ultramarine::round_robin_local_placement_strategy`
+## Struct `ultramarine::round_robin_local_placement_strategy`
 
 ``` cpp
 struct round_robin_local_placement_strategy
@@ -39,7 +39,7 @@ A round-robin placement strategy that shards actors based on the modulo of their
 
 -----
 
-### Type alias `ultramarine::default_local_placement_strategy`
+## Type alias `ultramarine::default_local_placement_strategy`
 
 ``` cpp
 using default_local_placement_strategy = ultramarine::round_robin_local_placement_strategy;
