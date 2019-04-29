@@ -6,7 +6,7 @@ url: "https://hippobaro.github.io"
 
 permalink: pretty
 
-remote_theme: pmarsceill/just-the-docs
+remote_theme: HippoBaro/just-the-docs
 search_enabled: true
 
 aux_links:
