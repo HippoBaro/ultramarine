@@ -69,7 +69,7 @@ auto future = ref.tell(hello_actor::message::say_hello());
 
 Ultramarine is build on Seastar and benefits from a lock-free, [shared-nothing design](http://seastar.io/shared-nothing/). Compared to typical actor model implementation, it doesn't use any locking or complex cache-unfriendly concurrent data-structures internally.
 
-Specifically, this gives Ultramarine an advantage on many-to-many communication patterns, because there is not contention on mailboxes. Also, because Ultramarine doesn't have per-actor mailboxes and thus doesn't process actor's message in batches, it has better latency characteristics.
+Specifically, this gives Ultramarine an advantage on many-to-many communication patterns, because there is not contention on mailboxes. Also, because Ultramarine doesn't have per-actor mailboxes and actor' messages aren't processed in batches, it has better latency characteristics.
 
 As an example see how it compares against other popular actor libraries on the [Big actor benchmark](http://release.softlab.ntua.gr/bencherl/files/erlang01-aronis.pdf):
 
