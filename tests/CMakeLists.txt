@@ -88,3 +88,6 @@ add_ultramarine_test(NAME test-actor_keys
 
 add_ultramarine_test(NAME test-local_actor
         SOURCES local_actor.cpp)
+
+add_ultramarine_test(NAME test-error_handling
+        SOURCES error_handling.cpp)
