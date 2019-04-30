@@ -3,7 +3,7 @@ title: Welcome
 nav_order: 1
 ---
 
-<p align="center"><img src="https://hippobaro.github.io/ultramarine/assets/logo.svg" alt="Ultramarine logo" width="256px" height="256px"></p>
+<p align="center"><img src="https://hippobaro.github.io/ultramarine/assets/logo.png" alt="Ultramarine logo" width="256px" height="256px"></p>
 
 
 [![CircleCI branch](https://img.shields.io/circleci/project/github/HippoBaro/ultramarine/master.svg?color=%23120a8f&style=for-the-badge)](https://circleci.com/gh/HippoBaro/ultramarine)
@@ -74,7 +74,7 @@ As an example see how it compares against other popular actor libraries on the [
 
 Mean Execution Time        | Standard deviation
 ---------------------------|--------------------
-![](assets/big_met.png)    | ![](assets/big_std.png)
+[![](assets/big_met.png)](https://hippobaro.github.io/ultramarine/assets/assets/big_met.png)    | [![](assets/big_std.png)](https://hippobaro.github.io/ultramarine/assets/big_std.png)
 
 More information and benchmarks are [available here](benchmarks.md).
 

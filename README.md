@@ -1,4 +1,4 @@
-<p align="center"><img src="https://hippobaro.github.io/ultramarine/assets/logo.svg" alt="Ultramarine logo" width="256px" height="256px"></p>
+<p align="center"><img src="https://hippobaro.github.io/ultramarine/assets/logo.png" alt="Ultramarine logo" width="256px" height="256px"></p>
 
 
 [![CircleCI branch](https://img.shields.io/circleci/project/github/HippoBaro/ultramarine/master.svg?color=%23120a8f&style=for-the-badge)](https://circleci.com/gh/HippoBaro/ultramarine)
