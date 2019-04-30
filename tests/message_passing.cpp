@@ -47,6 +47,11 @@ struct no_copy_message {
     };
 };
 
+class void_actor : public ultramarine::actor<void_actor> {
+public:
+ULTRAMARINE_DEFINE_ACTOR(void_actor,);
+};
+
 class counter_actor : public ultramarine::actor<counter_actor> {
 public:
     int counter = 0;
@@ -83,11 +88,15 @@ public:
         return seastar::make_ready_future<no_copy_message>(no_copy_message());
     }
 
-    ULTRAMARINE_DEFINE_ACTOR(counter_actor,
-                             (get_execution_shard)
-                                     (increase_counter_future)(increase_counter_void)
-                                     (get_counter_future)(get_counter_int)
-                                     (move_arg_message)(move_return_value_message)(move_return_future_message));
+    seastar::future<> actor_ref_copy(ultramarine::actor_ref<void_actor> other) const {
+        return seastar::make_ready_future<>();
+    }
+
+ULTRAMARINE_DEFINE_ACTOR(counter_actor,
+                         (get_execution_shard)
+                                 (increase_counter_future)(increase_counter_void)(get_counter_future)(get_counter_int)
+                                 (move_arg_message)(move_return_value_message)(move_return_future_message)
+                                 (actor_ref_copy));
 };
 
 using namespace seastar;
@@ -138,6 +147,13 @@ SEASTAR_THREAD_TEST_CASE (same_core_nocopy_future_return_message_passing) {
     auto ret = counterActor.tell(counter_actor::message::move_return_future_message()).get0();
 }
 
+SEASTAR_THREAD_TEST_CASE (same_core_copy_actor_ref) {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    auto otherActor = ultramarine::get<void_actor>(0);
+
+    counterActor.tell(counter_actor::message::actor_ref_copy(), otherActor).wait();
+}
+
 /*
  * Collocated
  */
@@ -182,4 +198,11 @@ SEASTAR_THREAD_TEST_CASE (collocated_core_nocopy_future_return_message_passing) 
     auto counterActor = ultramarine::get<counter_actor>(1);
 
     auto ret = counterActor.tell(counter_actor::message::move_return_future_message()).get0();
+}
+
+SEASTAR_THREAD_TEST_CASE (collocated_core_copy_actor_ref) {
+    auto counterActor = ultramarine::get<counter_actor>(1);
+    auto otherActor = ultramarine::get<void_actor>(0);
+
+    counterActor.tell(counter_actor::message::actor_ref_copy(), otherActor).wait();
 }
