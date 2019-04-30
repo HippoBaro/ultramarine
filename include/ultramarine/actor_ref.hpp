@@ -64,7 +64,7 @@ namespace ultramarine {
         /// \returns The value returned by the provided lambda, if any
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
-            return std::visit([func = std::forward<Func>(func)](auto &&impl) mutable {
+            return std::visit([func = std::forward<Func>(func)](auto const &impl) {
                 return func(impl);
             }, impl);
         }
@@ -76,8 +76,8 @@ namespace ultramarine {
         template<typename Handler, typename ...Args>
         constexpr auto inline tell(Handler message, Args &&... args) const {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
-                return visit([message, &args](auto &&impl) {
-                    return std::apply([&impl, message](Args &&... args) {
+                return visit([message, &args](auto const& impl) {
+                    return std::apply([&impl, message](auto &&... args) {
                         return impl.tell(message, std::forward<Args>(args) ...);
                     }, std::move(args));
                 });
@@ -90,7 +90,7 @@ namespace ultramarine {
         /// \returns A future representing the eventually returned value by the actor, or a failed future
         template<typename Handler>
         constexpr auto inline tell(Handler message) const {
-            return visit([message](auto &&impl) {
+            return visit([message](auto const& impl) {
                 return impl.tell(message);
             });
         };
@@ -139,8 +139,8 @@ namespace ultramarine {
         template<typename Handler, typename ...Args>
         constexpr auto inline tell(Handler message, Args &&... args) const {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
-                return visit([message, &args](auto &&impl) {
-                    return std::apply([&impl, message](Args &&... args) {
+                return visit([message, &args](auto const& impl) {
+                    return std::apply([&impl, message](auto &&... args) {
                         return impl.tell(message, std::forward<Args>(args) ...);
                     }, std::move(args));
                 });
@@ -153,7 +153,7 @@ namespace ultramarine {
         /// \returns A future representing the eventually returned value by the actor, or a failed future
         template<typename Handler>
         constexpr auto inline tell(Handler message) const {
-            return visit([message](auto &&impl) {
+            return visit([message](auto const& impl) {
                 return impl.tell(message);
             });
         };
