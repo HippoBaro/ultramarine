@@ -30,3 +30,6 @@ target_link_libraries(thread_ring PRIVATE Ultramarine::actor)
 
 add_executable(big big.cpp benchmark_utility.hpp)
 target_link_libraries(big PRIVATE Ultramarine::actor)
+
+add_executable(mailbox_performance mailbox_performance.cpp benchmark_utility.hpp)
+target_link_libraries(mailbox_performance PRIVATE Ultramarine::actor)
