@@ -53,6 +53,12 @@ ULTRAMARINE_DEFINE_ACTOR(void_actor,);
 };
 
 class counter_actor : public ultramarine::actor<counter_actor> {
+ULTRAMARINE_DEFINE_ACTOR(counter_actor,
+                         (get_execution_shard)
+                                 (increase_counter_future)(increase_counter_void)(get_counter_future)(get_counter_int)
+                                 (move_arg_message)(move_return_value_message)(move_return_future_message)
+                                 (actor_ref_copy)(poly_actor_ref_copy));
+
 public:
     int counter = 0;
 
@@ -92,11 +98,9 @@ public:
         return seastar::make_ready_future<>();
     }
 
-ULTRAMARINE_DEFINE_ACTOR(counter_actor,
-                         (get_execution_shard)
-                                 (increase_counter_future)(increase_counter_void)(get_counter_future)(get_counter_int)
-                                 (move_arg_message)(move_return_value_message)(move_return_future_message)
-                                 (actor_ref_copy));
+    seastar::future<> poly_actor_ref_copy(ultramarine::poly_actor_ref other) const {
+        return other.as<counter_actor>().tell(counter_actor::message::get_counter_future()).discard_result();
+    }
 };
 
 using namespace seastar;
@@ -154,6 +158,18 @@ SEASTAR_THREAD_TEST_CASE (same_core_copy_actor_ref) {
     counterActor.tell(counter_actor::message::actor_ref_copy(), otherActor).wait();
 }
 
+SEASTAR_THREAD_TEST_CASE (same_core_copy_poly_actor_ref) {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+
+    counterActor.tell(counter_actor::message::poly_actor_ref_copy(), counterActor).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (same_core_move_poly_actor_ref) {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+
+    counterActor.tell(counter_actor::message::poly_actor_ref_copy(), std::move(counterActor)).wait();
+}
+
 /*
  * Collocated
  */
@@ -205,4 +221,16 @@ SEASTAR_THREAD_TEST_CASE (collocated_core_copy_actor_ref) {
     auto otherActor = ultramarine::get<void_actor>(0);
 
     counterActor.tell(counter_actor::message::actor_ref_copy(), otherActor).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (collocated_core_copy_poly_actor_ref) {
+    auto counterActor = ultramarine::get<counter_actor>(1);
+
+    counterActor.tell(counter_actor::message::poly_actor_ref_copy(), counterActor).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (collocated_core_move_poly_actor_ref) {
+    auto counterActor = ultramarine::get<counter_actor>(1);
+
+    counterActor.tell(counter_actor::message::poly_actor_ref_copy(), std::move(counterActor)).wait();
 }

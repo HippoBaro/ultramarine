@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <any>
 #include <variant>
 #include "actor.hpp"
 #include "impl/directory.hpp"
@@ -153,6 +154,37 @@ namespace ultramarine {
                 return impl.tell(message);
             });
         };
+    };
+
+    /// A movable and copyable polymorphic reference to a virtual actor.
+    /// Useful when an [ultramarine::actor]() declares a message with an actor_ref<itself> as argument.
+    /// Avoids incomplete type compiler error.
+    /// \unique_name ultramarine::poly_actor_ref
+    /// \exclude
+    class poly_actor_ref {
+        std::any opaque;
+
+    public:
+        template<template<typename> class Ref, typename Actor>
+        constexpr poly_actor_ref(Ref<Actor> &&ref) noexcept : opaque(std::forward<Ref<Actor>>(ref)) {
+            static_assert(std::is_same_v<actor_ref<Actor>,
+                    Ref < Actor>>, "poly_actor_ref used with non [ultramarine::actor_ref]() type");
+        };
+
+        template<template<typename> class Ref, typename Actor>
+        constexpr poly_actor_ref(Ref<Actor> const &ref) noexcept : opaque(ref) {
+            static_assert(std::is_same_v<actor_ref<Actor>, Ref<Actor>>,
+                          "poly_actor_ref used with non [ultramarine::actor_ref]() type");
+        };
+
+        /// Cast this instance into a fully specified actor_ref
+        /// \requires Actor shall be of type [ultramarine::actor]()
+        /// \tparam Actor The type of [ultramarine::actor]() to reference
+        /// \return An [ultramarine::actor_ref]()
+        template<typename Actor>
+        auto as() {
+            return std::any_cast<actor_ref<Actor>>(opaque);
+        }
     };
 
     /// Create a reference to a virtual actor
