@@ -41,6 +41,7 @@ namespace ultramarine {
     struct actor : private boost::noncopyable {
 
         /// Default key type (unsigned long integer)
+        /// \unique_name ultramarine::actor::KeyType
         /// See [ultramarine::actor_id]()
         using KeyType = actor_id;
 

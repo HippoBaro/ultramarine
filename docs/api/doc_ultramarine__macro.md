@@ -17,6 +17,10 @@ parent: API index
 
 Expands with enclosing actor internal definitions
 
+*Requires:* `name` shall be a [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) derived type
+
+*Requires:* `seq` shall be a sequence of zero or more message handler (Example: `(handler1)(handler2)`)
+
 Example:
 
 ``` cpp

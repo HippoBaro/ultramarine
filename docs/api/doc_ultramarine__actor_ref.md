@@ -6,8 +6,6 @@ parent: API index
 # ultramarine/actor_ref.hpp
 
 ``` cpp
-#include "actor.hpp"
-
 namespace ultramarine
 {
     template <ultramarine::ActorKind = actor_kind<Actor>()>
@@ -45,13 +43,9 @@ class actor_ref<Actor, ActorKind::SingletonActor>
 {
 public:
     template <typename KeyType>
-    constexpr actor_ref(KeyType&& key);
+    constexpr actor_ref(KeyType key);
 
-    constexpr actor_ref(impl::local_actor_ref<Actor> const& ref);
-
-    constexpr actor_ref(impl::collocated_actor_ref<Actor> const& ref);
-
-    constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::SingletonActor> const&) = default;
+    constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::SingletonActor> const&) noexcept = default;
 
     constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::SingletonActor>&&) noexcept = default;
 
@@ -74,7 +68,7 @@ A movable and copyable reference to a virtual actor
 typename Actor
 ```
 
-The type of actor to reference
+The type of [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) to reference
 
 *Requires:* Type `Actor` shall inherit from [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
 
@@ -87,7 +81,7 @@ template <typename Func>
 constexpr auto visit(Func&& func) const noexcept;
 ```
 
-Obtain the concrete actor\_ref implementation
+Obtain the concrete [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) implementation
 
 ## Parameter `ultramarine::actor_ref::func`
 
@@ -95,7 +89,7 @@ Obtain the concrete actor\_ref implementation
 Func&& func
 ```
 
-A lambda to execute with the actor\_ref implementation
+A lambda to execute with the [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) implementation
 
 *Returns:* The value returned by the provided lambda, if any
 
@@ -108,9 +102,9 @@ template <typename Handler, typename ... Args>
 constexpr auto tell(Handler message, Args &&... args) const;
 ```
 
-Enqueue a message to the actor referenced by this actor\_ref instance
+Enqueue a message to the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) referenced by this [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) instance
 
-*Effects:* Creates the actor if it doesn’t exist
+*Effects:* Creates the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) if it doesn’t exist
 
 ## Parameter `ultramarine::actor_ref::message`
 
@@ -131,9 +125,9 @@ template <typename Handler>
 constexpr auto tell(Handler message) const;
 ```
 
-Enqueue a message to the actor referenced by this actor\_ref instance
+Enqueue a message to the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) referenced by this [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) instance
 
-*Effects:* Creates the actor if it doesn’t exist
+*Effects:* Creates the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) if it doesn’t exist
 
 ## Parameter `ultramarine::actor_ref::message`
 
@@ -155,9 +149,9 @@ class actor_ref<Actor, ActorKind::LocalActor>
 {
 public:
     template <typename KeyType>
-    constexpr actor_ref(KeyType&& key);
+    constexpr actor_ref(KeyType key);
 
-    constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::LocalActor> const&) = default;
+    constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::LocalActor> const&) noexcept = default;
 
     constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::LocalActor>&&) noexcept = default;
 
@@ -172,7 +166,7 @@ public:
 };
 ```
 
-A movable and copyable reference to a virtual actor
+A movable and copyable reference to an [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
 
 ## Template parameter `ultramarine::actor_ref::Actor`
 
@@ -180,7 +174,7 @@ A movable and copyable reference to a virtual actor
 typename Actor
 ```
 
-The type of actor to reference
+The type of [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) to reference
 
 *Requires:* Type `Actor` shall inherit from [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) and from attribute [`ultramarine::local_actor`](doc_ultramarine__actor_attributes.md#standardese-ultramarine__local_actor)
 
@@ -193,7 +187,7 @@ template <typename Func>
 constexpr auto visit(Func&& func) const noexcept;
 ```
 
-Obtain the concrete actor\_ref implementation
+Obtain the concrete [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) implementation
 
 ## Parameter `ultramarine::actor_ref::func`
 
@@ -201,7 +195,7 @@ Obtain the concrete actor\_ref implementation
 Func&& func
 ```
 
-A lambda to execute with the actor\_ref implementation
+A lambda to execute with the [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) implementation
 
 *Returns:* The value returned by the provided lambda, if any
 
@@ -214,9 +208,9 @@ template <typename Handler, typename ... Args>
 constexpr auto tell(Handler message, Args &&... args) const;
 ```
 
-Enqueue a message to the actor referenced by this actor\_ref instance
+Enqueue a message to the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) referenced by this [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) instance
 
-*Effects:* Creates the actor if it doesn’t exist
+*Effects:* Creates the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) if it doesn’t exist
 
 ### Parameters
 
@@ -241,9 +235,9 @@ template <typename Handler>
 constexpr auto tell(Handler message) const;
 ```
 
-Enqueue a message to the actor referenced by this actor\_ref instance
+Enqueue a message to the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) referenced by this [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) instance
 
-*Effects:* Creates the actor if it doesn’t exist
+*Effects:* Creates the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) if it doesn’t exist
 
 ## Parameter `ultramarine::actor_ref::message`
 
@@ -272,7 +266,7 @@ Create a reference to a virtual actor
 typename Actor
 ```
 
-The type of actor to reference
+The type of [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) to reference
 
 *Requires:* Type `Actor` shall inherit from [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
 
@@ -286,6 +280,6 @@ KeyType&& key
 
 The primary key of the actor
 
-*Returns:* A [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-)
+*Returns:* An [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-)
 
 -----

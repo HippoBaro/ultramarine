@@ -51,7 +51,9 @@ Optional. Allows to specify a custom local placement strategy. Defaults to [`ult
 using KeyType = ultramarine::actor_id;
 ```
 
-Default key type (unsigned long integer) See [`ultramarine::actor_id`](doc_ultramarine__directory.md#standardese-ultramarine__actor_id)
+Default key type (unsigned long integer)
+
+See [`ultramarine::actor_id`](doc_ultramarine__directory.md#standardese-ultramarine__actor_id)
 
 -----
 

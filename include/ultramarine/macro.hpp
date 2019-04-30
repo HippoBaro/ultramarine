@@ -53,6 +53,8 @@ static constexpr auto tag() { return BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag))
 /// };
 /// ```
 /// \unique_name ULTRAMARINE_DEFINE_ACTOR
+/// \requires `name` shall be a [ultramarine::actor]() derived type
+/// \requires `seq` shall be a sequence of zero or more message handler (Example: `(handler1)(handler2)`)
 #define ULTRAMARINE_DEFINE_ACTOR(name, seq)                                                                 \
 private:                                                                                                    \
       const KeyType key;                                                                                    \

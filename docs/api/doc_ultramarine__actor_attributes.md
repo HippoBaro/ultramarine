@@ -28,9 +28,11 @@ struct local_actor
 
 Actor attribute base class that specify that the Derived actor should be treated as a local actor
 
+*Requires:* Type `Derived` shall inherit from [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
+
 ### Template parameters
 
-  - `Derived` - The derived actor class for CRTP purposes
+  - `Derived` - The derived [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) class for CRTP purposes
   - `ConcurrencyLimit` - Optional. The limit of concurrent local activations for this actor
 
 -----
@@ -46,7 +48,7 @@ struct non_reentrant_actor
 
 Actor attribute base class that specify that the Derived actor should be protected against reentrancy
 
-*Requires:* Type `Derived` should be of type [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
+*Requires:* Type `Derived` shall inherit from [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
 
 ### Template parameters
 

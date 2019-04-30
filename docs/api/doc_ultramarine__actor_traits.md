@@ -33,7 +33,7 @@ enum class ActorKind
 };
 ```
 
-Enum representing the possible kinds of actor
+Enum representing the possible kinds of [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
 
 -----
 
@@ -44,7 +44,7 @@ template <typename Actor>
 constexpr ultramarine::ActorKind actor_kind();
 ```
 
-Get the actor type
+Get the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) type
 
 ## Template parameter `ultramarine::Actor`
 
@@ -52,7 +52,7 @@ Get the actor type
 typename Actor
 ```
 
-The actor type to test against
+The [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) type to test against
 
 *Requires:* Type `Actor` shall inherit from [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
 
@@ -66,7 +66,7 @@ The actor type to test against
 template <typename Actor>constexpr bool is_reentrant_v = !std::is_base_of_v<non_reentrant_actor<Actor>, Actor>;
 ```
 
-Compile-time trait returning true if the actor type is reentrant
+Compile-time trait testing if the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) type is reentrant
 
 *Requires:* Type `Actor` shall inherit from [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
 
@@ -78,7 +78,7 @@ Compile-time trait returning true if the actor type is reentrant
 template <typename Actor>constexpr bool is_local_actor_v = std::is_base_of_v<impl::local_actor, Actor>;
 ```
 
-Compile-time trait returning true if actor type is local
+Compile-time trait testing if the [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) type is local
 
 *Requires:* Type `Actor` shall inherit from [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
 
@@ -90,7 +90,7 @@ Compile-time trait returning true if actor type is local
 template <typename Actor>constexpr bool is_unlimited_concurrent_local_actor_v = std::is_base_of_v<local_actor<Actor>, Actor>;
 ```
 
-Compile-time trait returning true if the local actor type doesn’t specify a concurrency limit
+Compile-time trait testing if the [`ultramarine::local_actor`](doc_ultramarine__actor_attributes.md#standardese-ultramarine__local_actor) type doesn’t specify a concurrency limit
 
 *Requires:* Type `Actor` shall inherit from [`ultramarine::local_actor`](doc_ultramarine__actor_attributes.md#standardese-ultramarine__local_actor)
 

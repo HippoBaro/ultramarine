@@ -89,7 +89,7 @@ template <typename Func>
 auto with_buffer(std::size_t capacity, Func&& func);
 ```
 
-Create a dynamic message buffer to use in a specified function scope
+Create a [`ultramarine::message_buffer`](doc_ultramarine__utility.md#standardese-ultramarine__message_buffer-Future-) to use in a specified function scope
 
 ### Parameters
 

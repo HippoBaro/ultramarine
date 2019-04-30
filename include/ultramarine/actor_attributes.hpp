@@ -37,7 +37,8 @@ namespace ultramarine {
 
     /// Actor attribute base class that specify that the Derived actor should be treated as a local actor
     /// \unique_name ultramarine::local_actor
-    /// \tparam Derived The derived actor class for CRTP purposes
+    /// \requires Type `Derived` shall inherit from [ultramarine::actor]()
+    /// \tparam Derived The derived [ultramarine::actor]() class for CRTP purposes
     /// \tparam ConcurrencyLimit Optional. The limit of concurrent local activations for this actor
     template<typename Derived, std::size_t ConcurrencyLimit = std::numeric_limits<std::size_t>::max()>
     struct local_actor : impl::local_actor {
@@ -56,7 +57,7 @@ namespace ultramarine {
 
     /// Actor attribute base class that specify that the Derived actor should be protected against reentrancy
     /// \unique_name ultramarine::non_reentrant_actor
-    /// \requires Type `Derived` should be of type [ultramarine::actor]()
+    /// \requires Type `Derived` shall inherit from [ultramarine::actor]()
     /// \tparam Derived The derived actor class for CRTP purposes
     template <typename Derived>
     struct non_reentrant_actor {

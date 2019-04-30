@@ -32,6 +32,7 @@ namespace ultramarine {
     /// A dynamic message buffer storing a set number of futures running concurrently
     /// \tparam Future The future type the message buffer will store
     /// \requires Type `Future` shall be a `seastar::future`
+    /// \unique_name ultramarine::message_buffer
     template<typename Future>
     struct message_buffer {
         boost::circular_buffer<Future> futs;
@@ -63,7 +64,7 @@ namespace ultramarine {
         }
     };
 
-    /// Create a dynamic message buffer to use in a specified function scope
+    /// Create a [ultramarine::message_buffer]() to use in a specified function scope
     /// \param capacity The number of message the buffer should be able to store before awaiting
     /// \param func A lambda function using the message buffer
     /// \returns Any value returned by the provided lambda function
