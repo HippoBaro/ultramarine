@@ -40,7 +40,7 @@ namespace ultramarine::impl {
         using ActorType = Actor;
 
         template<typename KeyType>
-        explicit constexpr collocated_actor_ref(KeyType &&k, std::size_t hash, seastar::shard_id loc):
+        explicit constexpr collocated_actor_ref(KeyType k, std::size_t hash, seastar::shard_id loc):
                 key(std::forward<KeyType>(k)), hash(hash), loc(loc) {}
 
         template<typename Handler>
@@ -71,7 +71,7 @@ namespace ultramarine::impl {
         using ActorType = Actor;
 
         template<typename KeyType>
-        explicit constexpr local_actor_ref(KeyType &&k, std::size_t hash) :
+        explicit constexpr local_actor_ref(KeyType k, std::size_t hash) :
                 key(std::forward<KeyType>(k)), hash(hash), inst(actor_directory<Actor>::hold_activation(key, hash)) {};
 
         template<typename Handler>

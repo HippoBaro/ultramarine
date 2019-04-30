@@ -7,7 +7,7 @@
 
 Ultramarine is a lightweight modern actor library built on top of the [Seastar C++ framework](https://github.com/scylladb/seastar). It helps writing distributed applications using virtual actors. It allows developers to write highly scalable applications while greatly simplifying discovery, state management, actor lifetime and more.
 
-The [Virtual Actor Model](http://research.microsoft.com/apps/pubs/default.aspx?id=210931) is an extension of the [Actor Model](https://en.wikipedia.org/wiki/Actor_model) where "virtual" actors (transcendental entities combining state and execution context) share and process information by exchanging messages. 
+The [Virtual Actor Model](http://research.microsoft.com/apps/pubs/default.aspx?id=210931) is a variation of the [Actor Model](https://en.wikipedia.org/wiki/Actor_model) where "virtual" actors (transcendental entities combining state and execution context) share and process information by exchanging messages. 
 
 It is heavily inspired by the [Microsoft Orleans](https://dotnet.github.io/orleans/Documentation/index.html) project.
 
