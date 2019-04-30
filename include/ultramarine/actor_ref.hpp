@@ -51,10 +51,6 @@ namespace ultramarine {
         explicit constexpr actor_ref(KeyType key) :
                 impl(impl::wrap_actor_ref_impl<Actor>(std::forward<KeyType>(key))) {}
 
-        explicit constexpr actor_ref(impl::local_actor_ref<Actor> const &ref) : impl(ref) {};
-
-        explicit constexpr actor_ref(impl::collocated_actor_ref<Actor> const &ref) : impl(ref) {};
-
         constexpr actor_ref(actor_ref const &) = default;
 
         constexpr actor_ref(actor_ref &&) noexcept = default;
