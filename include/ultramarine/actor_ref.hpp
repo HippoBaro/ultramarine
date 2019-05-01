@@ -156,12 +156,13 @@ namespace ultramarine {
         };
     };
 
-    /// A movable and copyable polymorphic reference to a virtual actor.
-    /// Useful when an [ultramarine::actor]() declares a message with an actor_ref<itself> as argument.
+    /// A movable and copyable type-erased reference to a virtual actor.
+    /// Useful when an [ultramarine::actor]() declares a message with an `actor_ref<itself>` as argument.
     /// Avoids incomplete type compiler error.
+    /// \remarks Use only when needed, as this type introduces overhead
     /// \unique_name ultramarine::poly_actor_ref
-    /// \exclude
     class poly_actor_ref {
+        /// \exclude
         std::any opaque;
 
     public:

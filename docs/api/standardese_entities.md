@@ -38,6 +38,8 @@ nav_order: 99
     
       - [`non_reentrant_actor`](doc_ultramarine__actor_attributes.md#standardese-ultramarine__non_reentrant_actor) - Actor attribute base class that specify that the Derived actor should be protected against reentrancy
     
+      - [`poly_actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__poly_actor_ref) - A movable and copyable type-erased reference to a virtual actor.
+    
       - [`round_robin_local_placement_strategy`](doc_ultramarine__directory.md#standardese-ultramarine__round_robin_local_placement_strategy) - A round-robin placement strategy that shards actors based on the modulo of their [`ultramarine::actor::KeyType`](doc_ultramarine__actor.md#standardese-ultramarine__actor__KeyType)
     
       - [`with_buffer`](doc_ultramarine__utility.md#standardese-ultramarine__with_buffer-Func--std__size_t-Func---) - Create a [`ultramarine::message_buffer`](doc_ultramarine__utility.md#standardese-ultramarine__message_buffer-Future-) to use in a specified function scope

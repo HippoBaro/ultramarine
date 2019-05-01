@@ -17,7 +17,9 @@ namespace ultramarine
     template <typename Actor>
     class actor_ref<Actor, ActorKind::LocalActor>;
 
-    template <typename Actor, typename KeyType = typename Actor::Keytype>
+    class poly_actor_ref;
+
+    template <typename Actor, typename KeyType = typename Actor::KeyType>
     constexpr actor_ref<Actor> get(KeyType&& key) noexcept;
 }
 ```
@@ -251,10 +253,56 @@ The message handler to enqueue
 
 -----
 
+## Class `ultramarine::poly_actor_ref`
+
+``` cpp
+class poly_actor_ref
+{
+public:
+    template <template <typename> class Ref, typename Actor>
+    constexpr poly_actor_ref(Ref<Actor>&& ref) noexcept;
+
+    template <template <typename> class Ref, typename Actor>
+    constexpr poly_actor_ref(const Ref<Actor>& ref) noexcept;
+
+    template <typename Actor>
+    auto as();
+};
+```
+
+A movable and copyable type-erased reference to a virtual actor.
+
+*Remarks:* Use only when needed, as this type introduces overhead
+
+Useful when an [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) declares a message with an `actor_ref<itself>` as argument. Avoids incomplete type compiler error.
+
+## Function `ultramarine::poly_actor_ref::as`
+
+``` cpp
+template <typename Actor>
+auto as();
+```
+
+Cast this instance into a fully specified actor\_ref
+
+*Requires:* Actor shall be of type [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
+
+## Template parameter `ultramarine::poly_actor_ref::Actor`
+
+``` cpp
+typename Actor
+```
+
+The type of [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) to reference
+
+*Returns:* An [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-)
+
+-----
+
 ## Function `ultramarine::get`
 
 ``` cpp
-template <typename Actor, typename KeyType = typename Actor::Keytype>
+template <typename Actor, typename KeyType = typename Actor::KeyType>
 constexpr actor_ref<Actor> get(KeyType&& key) noexcept;
 ```
 
@@ -269,6 +317,8 @@ typename Actor
 The type of [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor) to reference
 
 *Requires:* Type `Actor` shall inherit from [`ultramarine::actor`](doc_ultramarine__actor.md#standardese-ultramarine__actor)
+
+*Requires:* Type `KeyType` shall be of type `Actor::KeyType`
 
 -----
 
