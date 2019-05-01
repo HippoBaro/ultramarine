@@ -192,8 +192,10 @@ namespace ultramarine {
     /// \requires Type `Actor` shall inherit from [ultramarine::actor]()
     /// \param key The primary key of the actor
     /// \returns An [ultramarine::actor_ref]()
-    template<typename Actor, typename KeyType = typename Actor::Keytype>
+    template<typename Actor, typename KeyType = typename Actor::KeyType>
     [[nodiscard]] constexpr inline actor_ref<Actor> get(KeyType &&key) noexcept {
+        static_assert(std::is_constructible<impl::ActorKey<Actor>,
+                KeyType &&>::value, "The provided key is not compatible with the Actor");
         return actor_ref<Actor>(std::forward<KeyType>(key));
     }
 }
