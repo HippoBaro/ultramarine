@@ -28,28 +28,30 @@
 #include <ultramarine/actor_ref.hpp>
 #include <ultramarine/actor.hpp>
 
-struct no_copy_message {
-    int count = 0;
+struct custom_key {
+    int inner_key = 0;
 
-    no_copy_message() = default;
+    bool operator==(const custom_key &rhs) const {
+        return inner_key == rhs.inner_key;
+    }
 
-    no_copy_message(no_copy_message const &) = delete;
-
-    no_copy_message &operator=(no_copy_message const &other) = delete;
-
-    no_copy_message(no_copy_message &&other) noexcept {
-        count = other.count + 1;
-    };
-
-    no_copy_message &operator=(no_copy_message &&other) noexcept {
-        count = other.count + 1;
-        return *this;
-    };
+    bool operator!=(const custom_key &rhs) const {
+        return !(rhs == *this);
+    }
 };
+
+namespace std {
+    template <>
+    struct hash<custom_key> {
+        std::size_t operator()(const custom_key& k) const {
+            return k.inner_key;
+        }
+    };
+}
 
 class string_actor : public ultramarine::actor<string_actor> {
 
-    std::string get_key() {
+    auto get_key() {
         return key;
     }
 
@@ -57,6 +59,18 @@ public:
     using KeyType = std::string;
 
     ULTRAMARINE_DEFINE_ACTOR(string_actor, (get_key))
+};
+
+class custom_key_actor : public ultramarine::actor<custom_key_actor> {
+
+    auto get_key() {
+        return key;
+    }
+
+public:
+    using KeyType = custom_key;
+
+ULTRAMARINE_DEFINE_ACTOR(custom_key_actor, (get_key))
 };
 
 using namespace seastar;
@@ -91,4 +105,19 @@ SEASTAR_THREAD_TEST_CASE (key_value_lvref_string_preserved) {
     key = std::string("test-actor-string-key2");
 
     BOOST_CHECK(counterActor.tell(string_actor::message::get_key()).get0() == "test-actor-string-key");
+}
+
+SEASTAR_THREAD_TEST_CASE (key_value_rvref_custom_preserved) {
+    auto counterActor = ultramarine::get<custom_key_actor>({0});
+
+    BOOST_CHECK(counterActor.tell(custom_key_actor::message::get_key()).get0() != custom_key{1});
+    BOOST_CHECK(counterActor.tell(custom_key_actor::message::get_key()).get0() == custom_key{0});
+}
+
+SEASTAR_THREAD_TEST_CASE (key_value_lvref_custom_preserved) {
+    auto key = custom_key{0};
+    auto counterActor = ultramarine::get<custom_key_actor>(key);
+
+    BOOST_CHECK(counterActor.tell(custom_key_actor::message::get_key()).get0() != custom_key{1});
+    BOOST_CHECK(counterActor.tell(custom_key_actor::message::get_key()).get0() == custom_key{0});
 }

@@ -190,6 +190,7 @@ namespace ultramarine {
     /// Create a reference to a virtual actor
     /// \tparam Actor The type of [ultramarine::actor]() to reference
     /// \requires Type `Actor` shall inherit from [ultramarine::actor]()
+    /// \requires Type `KeyType` shall be of type `Actor::KeyType`
     /// \param key The primary key of the actor
     /// \returns An [ultramarine::actor_ref]()
     template<typename Actor, typename KeyType = typename Actor::KeyType>
