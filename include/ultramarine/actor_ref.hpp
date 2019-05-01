@@ -61,8 +61,16 @@ namespace ultramarine {
         /// \returns The value returned by the provided lambda, if any
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
-            return std::visit([func = std::forward<Func>(func)](auto const &impl) {
-                return func(impl);
+            return std::visit([func = std::forward<Func>(func)](auto const& impl) {
+                using ret_type = std::result_of_t<Func(decltype(impl))>;
+                if constexpr (seastar::is_future<ret_type>::value) {
+                    return seastar::do_with(std::move(decltype(impl)(impl)), [func] (auto const& impl) {
+                        return func(impl);
+                    });
+                }
+                else {
+                    return func(impl);
+                }
             }, impl);
         }
 
