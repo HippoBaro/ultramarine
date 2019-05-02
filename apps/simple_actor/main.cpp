@@ -54,7 +54,7 @@ int main(int ac, char **av) {
                 });
             });
 
-            return ultramarine::get<simple_actor>("Ultra").tell(simple_actor::message::say_hello());
+            return ultramarine::get<simple_actor>("Ultra")->say_hello();
         });
     });
 }

@@ -57,12 +57,12 @@ int main(int ac, char **av) {
                 });
             });
 
-            return seastar::when_all(ultramarine::get<worker>(0).tell(worker::message::say_hello()),
-                                     ultramarine::get<worker>(0).tell(worker::message::say_hello()),
-                                     ultramarine::get<worker>(0).tell(worker::message::say_hello()),
-                                     ultramarine::get<worker>(0).tell(worker::message::say_hello()),
-                                     ultramarine::get<worker>(0).tell(worker::message::say_hello()),
-                                     ultramarine::get<worker>(0).tell(worker::message::say_hello())
+            return seastar::when_all(ultramarine::get<worker>(0)->say_hello(),
+                                     ultramarine::get<worker>(0)->say_hello(),
+                                     ultramarine::get<worker>(0)->say_hello(),
+                                     ultramarine::get<worker>(0)->say_hello(),
+                                     ultramarine::get<worker>(0)->say_hello(),
+                                     ultramarine::get<worker>(0)->say_hello()
             ).discard_result();
         });
     });
