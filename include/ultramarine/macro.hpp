@@ -38,12 +38,12 @@ static constexpr auto tag() { return BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag))
 /// \exclude
 #define ULTRAMARINE_MAKE_TAG_ALT(a, b, i, tag)                                                              \
 template<typename ...Args, class T = b>                                                                     \
-constexpr auto tag(Args &&... args) const                                                                   \
+inline constexpr auto tag(Args &&... args) const                                                            \
   -> seastar::futurize_t<std::result_of_t <decltype(&T::tag)(T, Args...)>> {                                \
     return ref.tell(BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)), std::forward<Args>(args) ...);             \
 }                                                                                                           \
 template<class T = b>                                                                                       \
-constexpr auto tag() const -> seastar::futurize_t<std::result_of_t <decltype(&T::tag)(T)>> {                \
+inline constexpr auto tag() const -> seastar::futurize_t<std::result_of_t <decltype(&T::tag)(T)>> {         \
     return ref.tell(BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)));                                           \
 }                                                                                                           \
 

@@ -150,7 +150,7 @@ namespace ultramarine {
         /// Provides an intuitive function call-like API.
         /// The syntax `ref->msg(args...)` is equivalent to `ref.tell(actor::message::msg, args...)` but shorter.
         /// \returns Returns the remote actor's interface
-        constexpr typename Actor::message::template interface<actor_ref<Actor>> operator->() const {
+        inline constexpr typename Actor::message::template interface<actor_ref<Actor>> operator->() const {
             return typename Actor::message::template interface<actor_ref<Actor>>{*this};
         }
 
