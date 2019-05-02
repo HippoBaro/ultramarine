@@ -26,6 +26,7 @@
 
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/hana.hpp>
+#include <seastar/core/future.hh>
 
 /// \exclude
 #define ULTRAMARINE_LITERAL(lit) #lit
@@ -34,10 +35,22 @@
 #define ULTRAMARINE_MAKE_TAG(a, b, i, tag)                                                                  \
 static constexpr auto tag() { return BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)); }                         \
 
+/// \exclude
+#define ULTRAMARINE_MAKE_TAG_ALT(a, b, i, tag)                                                              \
+template<typename ...Args, class T = b>                                                                     \
+constexpr auto tag(Args &&... args) const                                                                   \
+  -> seastar::futurize_t<std::result_of_t <decltype(&T::tag)(T, Args...)>> {                                \
+    return ref.tell(BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)), std::forward<Args>(args) ...);             \
+}                                                                                                           \
+template<class T = b>                                                                                       \
+constexpr auto tag() const -> seastar::futurize_t<std::result_of_t <decltype(&T::tag)(T)>> {                \
+    return ref.tell(BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)));                                           \
+}                                                                                                           \
+
 
 /// \exclude
 #define ULTRAMARINE_MAKE_TUPLE(a, data, i, name)                                                            \
-    boost::hana::make_pair(name(), &data::name),                                                            \
+    boost::hana::make_pair(message::name(), &data::name),                                                   \
 
 
 /// \brief Expands with enclosing actor internal definitions
@@ -62,12 +75,24 @@ public:                                                                         
       explicit name(KeyType key) : key(std::move(key)) { }                                                  \
       struct message {                                                                                      \
           BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG, name, seq)                                          \
-private:                                                                                                    \
-      friend class ultramarine::impl::vtable<name>;                                                         \
-      static constexpr auto make_vtable() {                                                                 \
-        return boost::hana::make_map(                                                                       \
-            BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                                      \
-            boost::hana::make_pair(BOOST_HANA_STRING("ultramarine_dummy"), nullptr)                         \
-        );                                                                                                  \
-      }                                                                                                     \
-};
+          template<typename Ref>                                                                            \
+          struct interface {                                                                                \
+              static_assert(std::is_same_v<typename Ref::ActorType, name>,                                  \
+                    "actor_ref used with invalid actor type");                                              \
+              Ref const& ref;                                                                               \
+              explicit interface(Ref const& ref) : ref(ref) {}                                              \
+              explicit interface(interface const&) = delete;                                                \
+              explicit interface(interface &&) = delete;                                                    \
+              BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG_ALT, name, seq)                                  \
+              constexpr auto operator->(){ return this; }                                                   \
+          };                                                                                                \
+      private:                                                                                              \
+          friend class ultramarine::impl::vtable<name>;                                                     \
+          static constexpr auto make_vtable() {                                                             \
+            return boost::hana::make_map(                                                                   \
+                BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                                  \
+                boost::hana::make_pair(BOOST_HANA_STRING("ultramarine_dummy"), nullptr)                     \
+            );                                                                                              \
+          }                                                                                                 \
+      };
+

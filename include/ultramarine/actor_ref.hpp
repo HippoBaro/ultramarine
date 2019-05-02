@@ -48,11 +48,13 @@ namespace ultramarine {
         const impl::actor_ref_variant<Actor> impl;
     public:
 
+        using ActorType = Actor;
+
         template<typename KeyType>
         explicit constexpr actor_ref(KeyType key) :
                 impl(impl::wrap_actor_ref_impl<Actor>(std::forward<KeyType>(key))) {}
 
-        constexpr actor_ref(actor_ref const &) noexcept = default;
+        constexpr actor_ref(actor_ref const &) = default;
 
         constexpr actor_ref(actor_ref &&) noexcept = default;
 
@@ -72,6 +74,13 @@ namespace ultramarine {
                     return func(impl);
                 }
             }, impl);
+        }
+
+        /// Provides an intuitive function call-like API.
+        /// The syntax `ref->msg(args...)` is equivalent to `ref.tell(actor::message::msg, args...)` but shorter.
+        /// \returns Returns the remote actor's interface
+        inline constexpr typename Actor::message::template interface<actor_ref<Actor>>  operator->() const {
+            return typename Actor::message::template interface<actor_ref<Actor>>{*this};
         }
 
         /// Enqueue a message to the [ultramarine::actor]() referenced by this [ultramarine::actor_ref]() instance
@@ -110,10 +119,12 @@ namespace ultramarine {
 
     public:
 
+        using ActorType = Actor;
+
         template<typename KeyType>
         explicit constexpr actor_ref(KeyType key) : key(std::forward<KeyType>(key)) {}
 
-        constexpr actor_ref(actor_ref const &) noexcept = default;
+        constexpr actor_ref(actor_ref const &) = default;
 
         constexpr actor_ref(actor_ref &&) noexcept = default;
 
@@ -134,6 +145,13 @@ namespace ultramarine {
             return impl::do_with_actor_ref_impl<Actor, impl::ActorKey<Actor>>(key, next, [&func](auto const &impl) {
                 return func(impl);
             });
+        }
+
+        /// Provides an intuitive function call-like API.
+        /// The syntax `ref->msg(args...)` is equivalent to `ref.tell(actor::message::msg, args...)` but shorter.
+        /// \returns Returns the remote actor's interface
+        constexpr typename Actor::message::template interface<actor_ref<Actor>> operator->() const {
+            return typename Actor::message::template interface<actor_ref<Actor>>{*this};
         }
 
         /// Enqueue a message to the [ultramarine::actor]() referenced by this [ultramarine::actor_ref]() instance

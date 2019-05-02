@@ -43,6 +43,14 @@ namespace ultramarine::impl {
         explicit constexpr collocated_actor_ref(KeyType k, std::size_t hash, seastar::shard_id loc):
                 key(std::forward<KeyType>(k)), hash(hash), loc(loc) {}
 
+        constexpr collocated_actor_ref(collocated_actor_ref const &) = default;
+
+        constexpr collocated_actor_ref(collocated_actor_ref &&) noexcept = default;
+
+        constexpr typename Actor::message::template interface<collocated_actor_ref<Actor>> operator->() const {
+            return typename Actor::message::template interface<collocated_actor_ref<Actor>>{*this};
+        }
+
         template<typename Handler>
         inline constexpr auto tell(Handler message) const {
             return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message] {
@@ -72,7 +80,15 @@ namespace ultramarine::impl {
 
         template<typename KeyType>
         explicit constexpr local_actor_ref(KeyType k, std::size_t hash) :
-                key(std::forward<KeyType>(k)), hash(hash), inst(actor_directory<Actor>::hold_activation(key, hash)) {};
+                key(std::forward<KeyType>(k)), hash(hash) {};
+
+        constexpr local_actor_ref(local_actor_ref const &) = default;
+
+        constexpr local_actor_ref(local_actor_ref &&) noexcept = default;
+
+        constexpr typename Actor::message::template interface<local_actor_ref<Actor>> operator->() const {
+            return typename Actor::message::template interface<local_actor_ref<Actor>>{*this};
+        }
 
         template<typename Handler>
         inline constexpr auto tell(Handler message) const {
