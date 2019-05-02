@@ -45,7 +45,7 @@ namespace ultramarine {
     /// \requires Type `Actor` shall inherit from [ultramarine::actor]()
     template<typename Actor>
     class actor_ref<Actor, ActorKind::SingletonActor> {
-        const impl::actor_ref_variant<Actor> impl;
+        impl::actor_ref_variant<Actor> impl;
     public:
 
         using ActorType = Actor;
@@ -115,7 +115,7 @@ namespace ultramarine {
     /// \requires Type `Actor` shall inherit from [ultramarine::actor]() and from attribute [ultramarine::local_actor]()
     template<typename Actor>
     class actor_ref<Actor, ActorKind::LocalActor> {
-        const impl::ActorKey<Actor> key;
+        impl::ActorKey<Actor> key;
 
     public:
 

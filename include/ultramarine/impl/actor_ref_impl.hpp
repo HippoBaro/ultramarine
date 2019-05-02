@@ -32,9 +32,9 @@
 namespace ultramarine::impl {
     template<typename Actor>
     class collocated_actor_ref {
-        const ActorKey<Actor> key;
-        const std::size_t hash;
-        const seastar::shard_id loc;
+        ActorKey<Actor> key;
+        std::size_t hash;
+        seastar::shard_id loc;
 
     public:
         using ActorType = Actor;
@@ -71,9 +71,8 @@ namespace ultramarine::impl {
 
     template<typename Actor>
     class local_actor_ref {
-        const ActorKey<Actor> key;
-        const std::size_t hash;
-        const Actor *inst = nullptr;
+        ActorKey<Actor> key;
+        std::size_t hash;
 
     public:
         using ActorType = Actor;
