@@ -35,7 +35,7 @@ Now, we can call our actor from anywhere in our Seastar code. To call an actor, 
 
 ```cpp
 auto ref = ultramarine::get<fibonacci_actor>(24);
-return ref.tell(fibonacci_actor::message::fib()).then([] (int value) {
+return ref->fib().then([] (int value) {
     seastar::print("Result: %d\n", value);
 });
 ```
@@ -51,8 +51,8 @@ seastar::future<int> fibonacci_actor::fib() {
     if (key <= 2) {
         return seastar::make_ready_future<int>(1);
     } else {
-        auto f1 = ultramarine::get<fibonacci_actor>(key - 1).tell(fibonacci_actor::message::fib());
-        auto f2 = ultramarine::get<fibonacci_actor>(key - 2).tell(fibonacci_actor::message::fib());
+        auto f1 = ultramarine::get<fibonacci_actor>(key - 1)->fib();
+        auto f2 = ultramarine::get<fibonacci_actor>(key - 2)->fib();
         return seastar::when_all_succeed(std::move(f1), std::move(f2)).then([] (auto r1, auto r2) {
             return r1 + r2;
         });

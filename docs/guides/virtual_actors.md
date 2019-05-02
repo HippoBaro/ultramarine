@@ -33,8 +33,8 @@ seastar::future<int> fibonacci_actor::fib() {
     } else if (result) {
         return seastar::make_ready_future<int>(*result);
     } else {
-        auto f1 = ultramarine::get<fibonacci_actor>(key - 1).tell(fibonacci_actor::message::fib());
-        auto f2 = ultramarine::get<fibonacci_actor>(key - 2).tell(fibonacci_actor::message::fib());
+        auto f1 = ultramarine::get<fibonacci_actor>(key - 1)->fib();
+        auto f2 = ultramarine::get<fibonacci_actor>(key - 2)->fib();
         return seastar::when_all_succeed(std::move(f1), std::move(f2)).then([this] (auto r1, auto r2) {
             return result = r1 + r2;
         });

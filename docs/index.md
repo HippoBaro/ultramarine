@@ -60,7 +60,7 @@ And then call the actor activation from anywhere in your seastar code using an [
 
 ```cpp
 auto ref = ultramarine::get<hello_actor>("Ultramarine");
-auto future = ref.tell(hello_actor::message::say_hello());
+auto future = ref->say_hello();
 // wait or attach a continuation to the returned future.
 ```
 

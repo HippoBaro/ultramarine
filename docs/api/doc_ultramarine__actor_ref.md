@@ -44,15 +44,19 @@ template <typename Actor>
 class actor_ref<Actor, ActorKind::SingletonActor>
 {
 public:
+    using ActorType = Actor;
+
     template <typename KeyType>
     constexpr actor_ref(KeyType key);
 
-    constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::SingletonActor> const&) noexcept = default;
+    constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::SingletonActor> const&) = default;
 
     constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::SingletonActor>&&) noexcept = default;
 
     template <typename Func>
     constexpr auto visit(Func&& func) const noexcept;
+
+    constexpr typename Actor::message::interface<actor_ref<Actor> > operator->() const;
 
     template <typename Handler, typename ... Args>
     constexpr auto tell(Handler message, Args &&... args) const;
@@ -94,6 +98,20 @@ Func&& func
 A lambda to execute with the [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) implementation
 
 *Returns:* The value returned by the provided lambda, if any
+
+-----
+
+## Function `ultramarine::actor_ref::operator->`
+
+``` cpp
+constexpr typename Actor::message::interface<actor_ref<Actor> > operator->() const;
+```
+
+Provides an intuitive function call-like API.
+
+*Returns:* Returns the remote actor’s interface
+
+The syntax `ref->msg(args...)` is equivalent to `ref.tell(actor::message::msg, args...)` but shorter.
 
 -----
 
@@ -150,15 +168,19 @@ template <typename Actor>
 class actor_ref<Actor, ActorKind::LocalActor>
 {
 public:
+    using ActorType = Actor;
+
     template <typename KeyType>
     constexpr actor_ref(KeyType key);
 
-    constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::LocalActor> const&) noexcept = default;
+    constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::LocalActor> const&) = default;
 
     constexpr actor_ref(actor_ref<type-parameter-0-0, ultramarine::ActorKind::LocalActor>&&) noexcept = default;
 
     template <typename Func>
     constexpr auto visit(Func&& func) const noexcept;
+
+    constexpr typename Actor::message::interface<actor_ref<Actor> > operator->() const;
 
     template <typename Handler, typename ... Args>
     constexpr auto tell(Handler message, Args &&... args) const;
@@ -200,6 +222,20 @@ Func&& func
 A lambda to execute with the [`ultramarine::actor_ref`](doc_ultramarine__actor_ref.md#standardese-ultramarine__actor_ref-Actor-) implementation
 
 *Returns:* The value returned by the provided lambda, if any
+
+-----
+
+## Function `ultramarine::actor_ref::operator->`
+
+``` cpp
+constexpr typename Actor::message::interface<actor_ref<Actor> > operator->() const;
+```
+
+Provides an intuitive function call-like API.
+
+*Returns:* Returns the remote actor’s interface
+
+The syntax `ref->msg(args...)` is equivalent to `ref.tell(actor::message::msg, args...)` but shorter.
 
 -----
 
