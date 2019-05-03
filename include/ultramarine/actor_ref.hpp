@@ -63,14 +63,13 @@ namespace ultramarine {
         /// \returns The value returned by the provided lambda, if any
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
-            return std::visit([func = std::forward<Func>(func)](auto const& impl) {
+            return std::visit([func = std::forward<Func>(func)](auto const &impl) {
                 using ret_type = std::result_of_t<Func(decltype(impl))>;
                 if constexpr (seastar::is_future<ret_type>::value) {
-                    return seastar::do_with(std::move(decltype(impl)(impl)), [func] (auto const& impl) {
+                    return seastar::do_with(std::move(decltype(impl)(impl)), [func](auto const &impl) {
                         return func(impl);
                     });
-                }
-                else {
+                } else {
                     return func(impl);
                 }
             }, impl);
@@ -79,8 +78,8 @@ namespace ultramarine {
         /// Provides an intuitive function call-like API.
         /// The syntax `ref->msg(args...)` is equivalent to `ref.tell(actor::message::msg, args...)` but shorter.
         /// \returns Returns the remote actor's interface
-        inline constexpr typename Actor::message::template interface<actor_ref<Actor>>  operator->() const {
-            return typename Actor::message::template interface<actor_ref<Actor>>{*this};
+        inline constexpr typename Actor::internal::template interface<actor_ref<Actor>> operator->() const {
+            return typename Actor::internal::template interface<actor_ref<Actor>>{*this};
         }
 
         /// Enqueue a message to the [ultramarine::actor]() referenced by this [ultramarine::actor_ref]() instance
@@ -150,8 +149,8 @@ namespace ultramarine {
         /// Provides an intuitive function call-like API.
         /// The syntax `ref->msg(args...)` is equivalent to `ref.tell(actor::message::msg, args...)` but shorter.
         /// \returns Returns the remote actor's interface
-        inline constexpr typename Actor::message::template interface<actor_ref<Actor>> operator->() const {
-            return typename Actor::message::template interface<actor_ref<Actor>>{*this};
+        inline constexpr typename Actor::internal::template interface<actor_ref<Actor>> operator->() const {
+            return typename Actor::internal::template interface<actor_ref<Actor>>{*this};
         }
 
         /// Enqueue a message to the [ultramarine::actor]() referenced by this [ultramarine::actor_ref]() instance
@@ -193,18 +192,18 @@ namespace ultramarine {
 
     public:
         template<template<typename> class Ref, typename Actor>
-        constexpr poly_actor_ref(Ref<Actor> &&ref) noexcept : opaque(std::forward<Ref<Actor>>(ref)) {
-            static_assert(std::is_same_v<actor_ref<Actor>,
-                    Ref < Actor>>, "poly_actor_ref used with non [ultramarine::actor_ref]() type");
+        explicit constexpr poly_actor_ref(Ref<Actor> &&ref) noexcept : opaque(std::forward<Ref<Actor>>(ref)) {
+            static_assert(std::is_same_v<actor_ref<Actor>, Ref<Actor>>,
+                    "poly_actor_ref used with non [ultramarine::actor_ref]() type");
         };
 
         template<template<typename> class Ref, typename Actor>
-        constexpr poly_actor_ref(Ref<Actor> const &ref) noexcept : opaque(ref) {
+        explicit constexpr poly_actor_ref(Ref<Actor> const &ref) noexcept : opaque(ref) {
             static_assert(std::is_same_v<actor_ref<Actor>, Ref<Actor>>,
                           "poly_actor_ref used with non [ultramarine::actor_ref]() type");
         };
 
-        /// Cast this instance into a fully specified actor_ref
+        /// Cast this instance into a fully specified `actor_ref`
         /// \requires Actor shall be of type [ultramarine::actor]()
         /// \tparam Actor The type of [ultramarine::actor]() to reference
         /// \returns An [ultramarine::actor_ref]()

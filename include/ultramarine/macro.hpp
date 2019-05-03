@@ -50,7 +50,7 @@ inline constexpr auto tag() const -> seastar::futurize_t<std::result_of_t <declt
 
 /// \exclude
 #define ULTRAMARINE_MAKE_TUPLE(a, data, i, name)                                                            \
-    boost::hana::make_pair(message::name(), &data::name),                                                   \
+    boost::hana::make_pair(internal::message::name(), &data::name),                                                   \
 
 
 /// \brief Expands with enclosing actor internal definitions
@@ -73,8 +73,7 @@ private:                                                                        
       const KeyType key;                                                                                    \
 public:                                                                                                     \
       explicit name(KeyType key) : key(std::move(key)) { }                                                  \
-      struct message {                                                                                      \
-          BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG, name, seq)                                          \
+      struct internal {                                                                                     \
           template<typename Ref>                                                                            \
           struct interface {                                                                                \
               static_assert(std::is_same_v<typename Ref::ActorType, name>,                                  \
@@ -86,13 +85,17 @@ public:                                                                         
               BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG_ALT, name, seq)                                  \
               constexpr auto operator->(){ return this; }                                                   \
           };                                                                                                \
-      private:                                                                                              \
-          friend class ultramarine::impl::vtable<name>;                                                     \
-          static constexpr auto make_vtable() {                                                             \
-            return boost::hana::make_map(                                                                   \
-                BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                                  \
-                boost::hana::make_pair(BOOST_HANA_STRING("ultramarine_dummy"), nullptr)                     \
-            );                                                                                              \
-          }                                                                                                 \
-      };
+          struct message {                                                                                  \
+              BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG, name, seq)                                      \
+          private:                                                                                          \
+              friend class ultramarine::impl::vtable<name>;                                                 \
+              static constexpr auto make_vtable() {                                                         \
+                  return boost::hana::make_map(                                                             \
+                      BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                            \
+                      boost::hana::make_pair(BOOST_HANA_STRING("ultramarine_dummy"), nullptr)               \
+                  );                                                                                        \
+              }                                                                                             \
+          };                                                                                                \
+      };                                                                                                    \
+      using message = internal::message;  /* FIXME: workaround */                                           \
 

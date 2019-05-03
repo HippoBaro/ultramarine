@@ -47,8 +47,8 @@ namespace ultramarine::impl {
 
         constexpr collocated_actor_ref(collocated_actor_ref &&) noexcept = default;
 
-        inline constexpr typename Actor::message::template interface<collocated_actor_ref<Actor>> operator->() const {
-            return typename Actor::message::template interface<collocated_actor_ref<Actor>>{*this};
+        inline constexpr typename Actor::internal::template interface<collocated_actor_ref<Actor>> operator->() const {
+            return typename Actor::internal::template interface<collocated_actor_ref<Actor>>{*this};
         }
 
         template<typename Handler>
@@ -85,8 +85,8 @@ namespace ultramarine::impl {
 
         constexpr local_actor_ref(local_actor_ref &&) noexcept = default;
 
-        inline constexpr typename Actor::message::template interface<local_actor_ref<Actor>> operator->() const {
-            return typename Actor::message::template interface<local_actor_ref<Actor>>{*this};
+        inline constexpr typename Actor::internal::template interface<local_actor_ref<Actor>> operator->() const {
+            return typename Actor::internal::template interface<local_actor_ref<Actor>>{*this};
         }
 
         template<typename Handler>
