@@ -25,7 +25,7 @@
 #include <seastar/core/app-template.hh>
 #include <seastar/core/print.hh>
 #include <seastar/core/sleep.hh>
-#include <ultramarine/silo.hpp>
+#include <seastar/core/future-util.hh>
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 
@@ -34,7 +34,7 @@ class worker :
         public ultramarine::local_actor<worker, 3>,
         public ultramarine::non_reentrant_actor<worker> {
     seastar::future<> say_hello() const {
-        seastar::print("Hello, World; from simple_actor %s (%zu bytes) located on core %u.\n", key, sizeof(worker),
+        seastar::print("Hello, World; from simple_actor %d (%zu bytes) located on core %u.\n", key, sizeof(worker),
                        seastar::engine().cpu_id());
 
         // Simulate long-running job
@@ -47,23 +47,21 @@ ULTRAMARINE_DEFINE_ACTOR(worker, (say_hello));
 int main(int ac, char **av) {
     seastar::app_template app;
 
-    return app.run(ac, av, [] {
-        auto silo = new ultramarine::silo_server();
-        return silo->start().then([silo] {
-            seastar::engine().at_exit([silo] {
-                return silo->stop().then([silo] {
-                    delete silo;
-                    return seastar::make_ready_future();
-                });
-            });
+    fmt::print("actor_ref size: {}\n", sizeof(ultramarine::actor_ref<worker>));
+    fmt::print(" -- local_actor_ref size: {}\n", sizeof(ultramarine::impl::collocated_actor_ref<worker>));
 
-            return seastar::when_all(ultramarine::get<worker>(0)->say_hello(),
-                                     ultramarine::get<worker>(0)->say_hello(),
-                                     ultramarine::get<worker>(0)->say_hello(),
-                                     ultramarine::get<worker>(0)->say_hello(),
-                                     ultramarine::get<worker>(0)->say_hello(),
-                                     ultramarine::get<worker>(0)->say_hello()
-            ).discard_result();
-        });
+    fmt::print("actor size: {}\n", sizeof(worker));
+    fmt::print(" -- local_actor attribute size: {}\n", sizeof(ultramarine::local_actor<worker, 3>));
+    fmt::print(" -- non_reentrant_actor attribute size: {}\n", sizeof(ultramarine::non_reentrant_actor<worker> ));
+    fmt::print(" -- key size: {}\n", sizeof(worker::KeyType));
+
+    return app.run(ac, av, [] {
+        return seastar::when_all(ultramarine::get<worker>(0)->say_hello(),
+                                 ultramarine::get<worker>(0)->say_hello(),
+                                 ultramarine::get<worker>(0)->say_hello(),
+                                 ultramarine::get<worker>(0)->say_hello(),
+                                 ultramarine::get<worker>(0)->say_hello(),
+                                 ultramarine::get<worker>(0)->say_hello()
+        ).discard_result();
     });
 }

@@ -22,20 +22,11 @@
  * SOFTWARE.
  */
 
-#include <seastar/core/app-template.hh>
-#include <seastar/core/print.hh>
-#include <ultramarine/actor_ref.hpp>
 #include "simple_actor.hpp"
+#include <seastar/core/print.hh>
 
-int main(int ac, char **av) {
-    fmt::print("actor_ref size: {}\n", sizeof(ultramarine::actor_ref<simple_actor>));
-    fmt::print(" -- local_actor_ref size: {}\n", sizeof(ultramarine::impl::collocated_actor_ref<simple_actor>));
-
-    fmt::print("actor size: {}\n", sizeof(simple_actor));
-    fmt::print(" -- key size: {}\n", sizeof(simple_actor::KeyType));
-
-    seastar::app_template app;
-    return app.run(ac, av, [] {
-        return ultramarine::get<simple_actor>("Ultra")->say_hello();
-    });
+seastar::future<> simple_actor::say_hello() const {
+    seastar::print("Hello, World; from simple_actor %s (%zu bytes) located on core %u.\n", key, sizeof(simple_actor),
+                   seastar::engine().cpu_id());
+    return seastar::make_ready_future();
 }

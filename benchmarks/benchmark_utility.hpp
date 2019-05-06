@@ -28,7 +28,7 @@
 #include <numeric>
 #include <seastar/core/app-template.hh>
 #include <seastar/core/print.hh>
-#include <ultramarine/silo.hpp>
+#include <ultramarine/cluster/impl/service.hpp>
 
 #define ULTRAMARINE_BENCH(name) {#name, name}
 
@@ -86,17 +86,8 @@ namespace ultramarine::benchmark {
         return app.run(ac, av, [benchs = std::move(benchs), run] {
             return seastar::do_with(std::move(benchs), std::vector<std::chrono::microseconds::rep>(), [run]
                     (auto &benchs, auto &vec) {
-                auto silo = new ultramarine::silo_server();
-                return silo->start().then([silo, run, &benchs] {
-                    seastar::engine().at_exit([silo] {
-                        return silo->stop().then([silo] {
-                            delete silo;
-                            return seastar::make_ready_future();
-                        });
-                    });
-                    return seastar::do_for_each(benchs, [run](auto &bench) {
-                        return run_one(bench, run);
-                    });
+                return seastar::do_for_each(benchs, [run](auto &bench) {
+                    return run_one(bench, run);
                 });
             });
         });
