@@ -29,15 +29,16 @@
 #include <boost/core/noncopyable.hpp>
 #include <seastar/core/reactor.hh>
 #include "impl/directory.hpp"
-#include "macro.hpp"
+#include "impl/macro.hpp"
 
 namespace ultramarine {
+
     /// Base template class defining an actor
     /// \unique_name ultramarine::actor
     /// \tparam Derived The derived actor class for CRTP purposes
     /// \tparam LocalPlacementStrategy Optional. Allows to specify a custom local placement strategy. Defaults to [ultramarine::default_local_placement_strategy]()
     /// \requires `Derived` should implement actor behavior using [ULTRAMARINE_DEFINE_ACTOR]()
-    template<typename Derived, typename LocalPlacementStrategy = default_local_placement_strategy>
+    template<typename Derived, typename LocalPlacementStrategy = impl::default_local_placement_strategy>
     struct actor : private boost::noncopyable {
 
         /// Default key type (unsigned long integer)
@@ -63,5 +64,3 @@ namespace ultramarine {
         }
     };
 }
-
-#include "actor_traits.hpp"

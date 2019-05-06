@@ -27,31 +27,46 @@
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/hana.hpp>
 #include <seastar/core/future.hh>
+#include "message_identifier.hpp"
 
 /// \exclude
 #define ULTRAMARINE_LITERAL(lit) #lit
 
-/// \exclude
-#define ULTRAMARINE_MAKE_TAG(a, b, i, tag)                                                                  \
-static constexpr auto tag() { return BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)); }                         \
+#define ULTRAMARINE_MAKE_IDENTITY(actor, handler)                                                           \
+boost::hana::uint<ultramarine::impl::crc32(ULTRAMARINE_LITERAL(actor::handler),                             \
+                                           sizeof(ULTRAMARINE_LITERAL(actor::handler)) - 1)>{}              \
 
 /// \exclude
-#define ULTRAMARINE_MAKE_TAG_ALT(a, b, i, tag)                                                              \
-template<typename ...Args, class T = b>                                                                     \
-inline constexpr auto tag(Args &&... args) const                                                            \
-  -> seastar::futurize_t<std::result_of_t <decltype(&T::tag)(T, Args...)>> {                                \
-    return ref.tell(BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)), std::forward<Args>(args) ...);             \
-}                                                                                                           \
-template<class T = b>                                                                                       \
-inline constexpr auto tag() const -> seastar::futurize_t<std::result_of_t <decltype(&T::tag)(T)>> {         \
-    return ref.tell(BOOST_HANA_STRING(ULTRAMARINE_LITERAL(tag)));                                           \
-}                                                                                                           \
+#define ULTRAMARINE_MAKE_TAG(a, data, i, tag)                                                               \
+static constexpr auto tag() { return ULTRAMARINE_MAKE_IDENTITY(data, tag); }                                \
 
+/// \exclude
+#define ULTRAMARINE_MAKE_TAG_ALT(a, data, i, tag)                                                           \
+template<typename ...Args, typename T = data>                                                               \
+inline constexpr seastar::futurize_t<std::result_of_t <decltype(&T::tag)(T, Args...)>>                      \
+tag(Args &&... args) const {                                                                                \
+    return ref.tell(ULTRAMARINE_MAKE_IDENTITY(data, tag), std::forward<Args>(args) ...);                    \
+}                                                                                                           \
 
 /// \exclude
 #define ULTRAMARINE_MAKE_TUPLE(a, data, i, name)                                                            \
-    boost::hana::make_pair(internal::message::name(), &data::name),                                                   \
+    boost::hana::make_pair(ULTRAMARINE_MAKE_IDENTITY(data, name), &data::name),                             \
 
+/// \exclude
+#define ULTRAMARINE_MAKE_VTABLE(name, seq)                                                                  \
+static constexpr auto make_vtable() {                                                                       \
+  return boost::hana::make_map(                                                                             \
+      BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                                            \
+      boost::hana::make_pair(BOOST_HANA_STRING("ultramarine_dummy"), nullptr)                               \
+  );                                                                                                        \
+}                                                                                                           \
+
+#ifdef ULTRAMARINE_REMOTE
+#include <ultramarine/cluster/impl/macro.hpp>
+#else
+/// \exclude
+#define ULTRAMARINE_REMOTE_MAKE_VTABLE(name, seq)
+#endif
 
 /// \brief Expands with enclosing actor internal definitions
 ///
@@ -70,9 +85,9 @@ inline constexpr auto tag() const -> seastar::futurize_t<std::result_of_t <declt
 /// \requires `seq` shall be a sequence of zero or more message handler (Example: `(handler1)(handler2)`)
 #define ULTRAMARINE_DEFINE_ACTOR(name, seq)                                                                 \
 private:                                                                                                    \
-      const KeyType key;                                                                                    \
+      KeyType key;                                                                                          \
 public:                                                                                                     \
-      explicit name(KeyType key) : key(std::move(key)) { }                                                  \
+      explicit name(KeyType &&key) noexcept : key(std::forward<KeyType>(key)) { }                           \
       struct internal {                                                                                     \
           template<typename Ref>                                                                            \
           struct interface {                                                                                \
@@ -89,12 +104,8 @@ public:                                                                         
               BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TAG, name, seq)                                      \
           private:                                                                                          \
               friend class ultramarine::impl::vtable<name>;                                                 \
-              static constexpr auto make_vtable() {                                                         \
-                  return boost::hana::make_map(                                                             \
-                      BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_TUPLE, name, seq)                            \
-                      boost::hana::make_pair(BOOST_HANA_STRING("ultramarine_dummy"), nullptr)               \
-                  );                                                                                        \
-              }                                                                                             \
+              ULTRAMARINE_MAKE_VTABLE(name, seq)                                                            \
+              ULTRAMARINE_REMOTE_MAKE_VTABLE(name, seq)                                                     \
           };                                                                                                \
       };                                                                                                    \
       using message = internal::message;  /* FIXME: workaround */                                           \

@@ -29,19 +29,24 @@
 #include <seastar/core/reactor.hh>
 #include "directory.hpp"
 
+#ifdef ULTRAMARINE_REMOTE
+
+#include <ultramarine/cluster/impl/remote_actor_ref.hpp>
+
+#endif
+
 namespace ultramarine::impl {
     template<typename Actor>
     class collocated_actor_ref {
-        ActorKey<Actor> key;
+        ActorKey <Actor> key;
         std::size_t hash;
         seastar::shard_id loc;
 
     public:
         using ActorType = Actor;
 
-        template<typename KeyType>
-        explicit constexpr collocated_actor_ref(KeyType k, std::size_t hash, seastar::shard_id loc):
-                key(std::forward<KeyType>(k)), hash(hash), loc(loc) {}
+        constexpr collocated_actor_ref(impl::ActorKey<Actor> k, std::size_t hash, seastar::shard_id loc) :
+                key(std::move(k)), hash(hash), loc(loc) {}
 
         constexpr collocated_actor_ref(collocated_actor_ref const &) = default;
 
@@ -53,8 +58,8 @@ namespace ultramarine::impl {
 
         template<typename Handler>
         inline constexpr auto tell(Handler message) const {
-            return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message] {
-                return actor_directory<Actor>::dispatch_message(k, h, message);
+            return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message]() mutable {
+                return actor_directory<Actor>::dispatch_message(std::move(k), h, message);
             });
         }
 
@@ -63,73 +68,41 @@ namespace ultramarine::impl {
             return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message, args = std::make_tuple(
                     std::forward<Args>(args) ...)]() mutable {
                 return std::apply([&k, h, message](auto &&... args) {
-                    return actor_directory<Actor>::dispatch_message(k, h, message, std::forward<Args>(args) ...);
+                    return actor_directory<Actor>::dispatch_message(std::move(k), h, message,
+                                                                    std::forward<Args>(args) ...);
                 }, std::move(args));
             });
         }
     };
 
+#ifdef ULTRAMARINE_REMOTE
     template<typename Actor>
-    class local_actor_ref {
-        ActorKey<Actor> key;
-        std::size_t hash;
-
-    public:
-        using ActorType = Actor;
-
-        template<typename KeyType>
-        explicit constexpr local_actor_ref(KeyType k, std::size_t hash) :
-                key(std::forward<KeyType>(k)), hash(hash) {};
-
-        constexpr local_actor_ref(local_actor_ref const &) = default;
-
-        constexpr local_actor_ref(local_actor_ref &&) noexcept = default;
-
-        inline constexpr typename Actor::internal::template interface<local_actor_ref<Actor>> operator->() const {
-            return typename Actor::internal::template interface<local_actor_ref<Actor>>{*this};
-        }
-
-        template<typename Handler>
-        inline constexpr auto tell(Handler message) const {
-            const auto cpu = seastar::engine().cpu_id();
-            return seastar::smp::submit_to(cpu, [k = this->key, h = this->hash, message] {
-                return actor_directory<Actor>::dispatch_message(k, h, message);
-            });
-        }
-
-        template<typename Handler, typename ...Args>
-        inline constexpr auto tell(Handler message, Args &&... args) const {
-            const auto cpu = seastar::engine().cpu_id();
-            return seastar::smp::submit_to(cpu, [k = this->key, h = this->hash, message, args = std::make_tuple(
-                    std::forward<Args>(args) ...)]() mutable {
-                return std::apply([&k, h, message](auto &&... args) {
-                    return actor_directory<Actor>::dispatch_message(k, h, message, std::forward<Args>(args) ...);
-                }, std::move(args));
-            });
-        }
-    };
-
+    using actor_ref_variant = std::variant<collocated_actor_ref<Actor>, cluster::impl::remote_actor_ref<Actor>>;
+#else
     template<typename Actor>
-    using actor_ref_variant = std::variant<local_actor_ref<Actor>, collocated_actor_ref<Actor>>;
+    using actor_ref_variant = std::variant<collocated_actor_ref<Actor>>;
+#endif
 
     template<typename Actor, typename KeyType, typename Func>
     [[nodiscard]] constexpr auto do_with_actor_ref_impl(KeyType &&key, Func &&func) noexcept {
-        auto hash = actor_directory<Actor>::hash_key(std::forward<KeyType>(key));
+        auto hash = actor_directory<Actor>::hash_key(key);
         auto shard = typename Actor::PlacementStrategy{}(hash);
-        if (shard == seastar::engine().cpu_id()) {
-            return func(local_actor_ref<Actor>(std::forward<KeyType>(key), hash));
+
+#ifdef ULTRAMARINE_REMOTE
+        auto remote_node = ultramarine::cluster::service().directory().node_for_key(hash);
+        if (!remote_node.is_local_node()) {
+            return func(ultramarine::cluster::impl::remote_actor_ref<Actor>(std::forward<KeyType>(key),
+                                                                            hash, std::move(remote_node)));
         }
+#endif
         return func(collocated_actor_ref<Actor>(std::forward<KeyType>(key), hash, shard));
     }
 
     template<typename Actor, typename KeyType, typename Func>
     [[nodiscard]] constexpr auto
-    do_with_actor_ref_impl(KeyType key, seastar::shard_id shard, Func &&func) noexcept {
+    do_with_actor_ref_impl(KeyType const &key, seastar::shard_id shard, Func &&func) noexcept {
         auto hash = actor_directory<Actor>::hash_key(shard);
-        if (shard == seastar::engine().cpu_id()) {
-            return func(local_actor_ref<Actor>(std::forward<KeyType>(key), hash));
-        }
-        return func(collocated_actor_ref<Actor>(std::forward<KeyType>(key), hash, shard));
+        return func(collocated_actor_ref<Actor>(key, hash, shard));
     }
 
     template<typename Actor, typename KeyType>

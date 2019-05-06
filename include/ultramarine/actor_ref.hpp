@@ -26,7 +26,6 @@
 
 #include <any>
 #include <variant>
-#include "actor.hpp"
 #include "impl/directory.hpp"
 #include "impl/actor_ref_impl.hpp"
 
@@ -50,9 +49,8 @@ namespace ultramarine {
 
         using ActorType = Actor;
 
-        template<typename KeyType>
-        explicit constexpr actor_ref(KeyType key) :
-                impl(impl::wrap_actor_ref_impl<Actor>(std::forward<KeyType>(key))) {}
+        explicit constexpr
+        actor_ref(impl::ActorKey<Actor> key) : impl(impl::wrap_actor_ref_impl<Actor>(std::move(key))) {}
 
         constexpr actor_ref(actor_ref const &) = default;
 
@@ -120,8 +118,7 @@ namespace ultramarine {
 
         using ActorType = Actor;
 
-        template<typename KeyType>
-        explicit constexpr actor_ref(KeyType key) : key(std::forward<KeyType>(key)) {}
+        explicit constexpr actor_ref(impl::ActorKey<Actor> key) : key(std::move(key)) {}
 
         constexpr actor_ref(actor_ref const &) = default;
 
@@ -192,15 +189,17 @@ namespace ultramarine {
 
     public:
         template<template<typename> class Ref, typename Actor>
-        explicit constexpr poly_actor_ref(Ref<Actor> &&ref) noexcept : opaque(std::forward<Ref<Actor>>(ref)) {
-            static_assert(std::is_same_v<actor_ref<Actor>, Ref<Actor>>,
-                    "poly_actor_ref used with non [ultramarine::actor_ref]() type");
+        constexpr poly_actor_ref(Ref<Actor> &&ref) : opaque(std::forward<Ref < Actor>>
+
+        (ref)) {
+            static_assert(std::is_same_v<actor_ref<Actor>, Ref < Actor>>,
+            "poly_actor_ref used with non actor_ref type");
         };
 
         template<template<typename> class Ref, typename Actor>
-        explicit constexpr poly_actor_ref(Ref<Actor> const &ref) noexcept : opaque(ref) {
+        constexpr poly_actor_ref(Ref<Actor> const &ref) : opaque(ref) {
             static_assert(std::is_same_v<actor_ref<Actor>, Ref<Actor>>,
-                          "poly_actor_ref used with non [ultramarine::actor_ref]() type");
+                          "poly_actor_ref used with non actor_ref type");
         };
 
         /// Cast this instance into a fully specified `actor_ref`

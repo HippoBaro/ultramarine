@@ -24,76 +24,98 @@
 
 #pragma once
 
-#include <ultramarine/actor_traits.hpp>
-#include "ultramarine/directory.hpp"
+#include <seastar/core/reactor.hh>
+#include <ultramarine/impl/actor_traits.hpp>
 
-namespace ultramarine::impl {
-    using actor_activation_id = unsigned int;
+namespace ultramarine {
 
-    template<typename Actor>
-    using directory = std::unordered_map<actor_id, Actor>;
+    /// [ultramarine::actor]() are identified internally via an unsigned integer id
+    /// \unique_name ultramarine::actor_id
+    using actor_id = std::size_t;
 
-    template<typename Actor>
-    using ActorKey = typename Actor::KeyType;
+    namespace impl {
+        /// A round-robin placement strategy that shards actors based on the modulo of their [ultramarine::actor::KeyType]()
+        /// \unique_name ultramarine::round_robin_local_placement_strategy
+        struct round_robin_local_placement_strategy {
+            /// \param A hashed [ultramarine::actor::KeyType]()
+            /// \returns The location the actor should be placed in
+            seastar::shard_id operator()(std::size_t hash) const noexcept {
+                return hash % seastar::smp::count;
+            }
+        };
 
-    template<typename Actor>
-    struct vtable {
-        static constexpr auto table = Actor::internal::message::make_vtable();
-    };
+        /// Default local placement strategy uses [ultramarine::round_robin_local_placement_strategy]()
+        /// \unique_name ultramarine::default_local_placement_strategy
+        using default_local_placement_strategy = round_robin_local_placement_strategy;
 
-    template<typename Actor>
-    struct actor_directory {
+        using actor_activation_id = unsigned int;
 
-        template<typename KeyType>
-        [[nodiscard]] static constexpr auto hash_key(KeyType &&key) noexcept {
-            return std::hash<ActorKey<Actor>>{}(key);
-        }
+        template<typename Actor>
+        using directory = std::unordered_map<actor_id, Actor>;
 
-        [[nodiscard]] static constexpr Actor *hold_activation(ActorKey<Actor> const &key, actor_id id) {
-            if (!Actor::directory) {
-                Actor::directory = std::make_unique<ultramarine::impl::directory<Actor>>();
+        template<typename Actor>
+        using ActorKey = typename Actor::KeyType;
+
+        template<typename Actor>
+        struct vtable {
+            static constexpr auto table = Actor::internal::message::make_vtable();
+        };
+
+        template<typename Actor>
+        struct actor_directory {
+
+            template<typename KeyType>
+            [[nodiscard]] static constexpr auto hash_key(KeyType const& key) noexcept {
+                return std::hash<ActorKey<Actor>>{}(key);
             }
 
-            auto r = std::get<0>(Actor::directory->try_emplace(id, key));
-            return &(std::get<1>(*r));
-        }
+            [[nodiscard]] static constexpr Actor *hold_activation(ActorKey<Actor> &&key, actor_id id) {
+                if (!Actor::directory) {
+                    Actor::directory = std::make_unique<ultramarine::impl::directory<Actor>>();
+                }
 
-        template<typename Handler, typename ...Args>
-        static constexpr auto dispatch_message(Actor *activation, Handler message, Args &&... args) {
-            if constexpr (is_reentrant_v<Actor>) {
-                return (activation->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
-            } else {
-                return seastar::with_semaphore(activation->semaphore, 1, std::chrono::seconds(1),
-                                               [message, activation, args = std::make_tuple(
-                                                       std::forward<Args>(args) ...)] {
-                                                   return std::apply([activation, message](auto &&... args) {
-                                                       return (activation->*vtable<Actor>::table[message])(
-                                                               std::forward<Args>(args) ...);
-                                                   }, std::move(args));
-                                               });
+                auto r = std::get<0>(Actor::directory->try_emplace(id, std::forward<ActorKey<Actor>>(key)));
+                return &(std::get<1>(*r));
             }
-        }
 
-        template<typename Handler>
-        static constexpr auto dispatch_message(Actor *activation, Handler message) {
-            if constexpr (is_reentrant_v<Actor>) {
-                return (activation->*vtable<Actor>::table[message])();
-            } else {
-                return seastar::with_semaphore(activation->semaphore, 1, std::chrono::seconds(1),
-                                               [message, activation] {
-                                                   return (activation->*vtable<Actor>::table[message])();
-                                               });
+            template<typename Handler, typename ...Args>
+            static constexpr auto dispatch_message(Actor *activation, Handler message, Args &&... args) {
+                if constexpr (is_reentrant_v<Actor>) {
+                    return (activation->*vtable<Actor>::table[message])(std::forward<Args>(args) ...);
+                } else {
+                    return seastar::with_semaphore(activation->semaphore, 1, std::chrono::seconds(1),
+                                                   [message, activation, args = std::make_tuple(
+                                                           std::forward<Args>(args) ...)] {
+                                                       return std::apply([activation, message](auto &&... args) {
+                                                           return (activation->*vtable<Actor>::table[message])(
+                                                                   std::forward<Args>(args) ...);
+                                                       }, std::move(args));
+                                                   });
+                }
             }
-        }
 
-        template<typename KeyType, typename Handler, typename ...Args>
-        static constexpr auto dispatch_message(KeyType &&key, actor_id id, Handler message, Args &&... args) {
-            return dispatch_message(hold_activation(key, id), message, std::forward<Args>(args) ...);
-        }
+            template<typename Handler>
+            static constexpr auto dispatch_message(Actor *activation, Handler message) {
+                if constexpr (is_reentrant_v<Actor>) {
+                    return (activation->*vtable<Actor>::table[message])();
+                } else {
+                    return seastar::with_semaphore(activation->semaphore, 1, std::chrono::seconds(1),
+                                                   [message, activation] {
+                                                       return (activation->*vtable<Actor>::table[message])();
+                                                   });
+                }
+            }
 
-        template<typename KeyType, typename Handler>
-        static constexpr auto dispatch_message(KeyType &&key, actor_id id, Handler message) {
-            return dispatch_message(hold_activation(key, id), message);
-        }
-    };
+            template<typename KeyType, typename Handler, typename ...Args>
+            static constexpr auto dispatch_message(KeyType &&key, actor_id id, Handler message, Args &&... args) {
+                return dispatch_message(hold_activation(std::forward<KeyType>(key), id), message,
+                                        std::forward<Args>(args) ...);
+            }
+
+            template<typename KeyType, typename Handler>
+            static constexpr auto dispatch_message(KeyType &&key, actor_id id, Handler message) {
+                return dispatch_message(hold_activation(std::forward<KeyType>(key), id), message);
+            }
+        };
+    }
 }
