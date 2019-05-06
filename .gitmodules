@@ -3,3 +3,7 @@
 	url = https://github.com/scylladb/seastar.git
 	fetchRecurseSubmodules = true
 	ignore = all
+[submodule "hash-ring"]
+	path = third-party/hash-ring
+	url = https://github.com/chrismoos/hash-ring.git
+	branch = master

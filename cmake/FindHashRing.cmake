@@ -22,34 +22,37 @@
 # SOFTWARE.
 #
 
-function (getListOfVarsStartingWith _prefix _varResult)
-    get_cmake_property(_vars VARIABLES)
-    string (REGEX MATCHALL "(^|;)${_prefix}[A-Za-z0-9_]*" _matchedVars "${_vars}")
-    set (${_varResult} ${_matchedVars} PARENT_SCOPE)
-endfunction()
+find_library (hashring_LIBRARY
+        NAMES hashring
+        HINTS
+        ${hashring_LIBDIR}
+        ${hashring_LIBRARY_DIRS})
 
-getListOfVarsStartingWith("Seastar" matchedVars)
-foreach (_var IN LISTS matchedVars)
-    set(_var "-D${_var}=${${_var}}")
-    list(APPEND seastarVars ${_var})
-endforeach()
-if (seastarVars)
-    message(STATUS "Detected Seastar arguments, forwarding " ${seastarVars})
-endif()
+find_path (hashring_INCLUDE_DIR
+        NAMES hash_ring.h
+        HINTS
+        ${hashring_INCLUDEDIR}
+        ${hashring_INCLUDEDIRS})
 
-cooking_ingredient (Seastar
-    COOKING_RECIPE
-        <DEFAULT>
-    COOKING_CMAKE_ARGS
-        ${seastarVars}
-    EXTERNAL_PROJECT_ARGS
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/seastar)
+mark_as_advanced (
+        hashring_LIBRARY
+        hashring_INCLUDE_DIR)
 
-cooking_ingredient (Hash-ring
-    EXTERNAL_PROJECT_ARGS
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/hash-ring
-        BUILD_IN_SOURCE YES
-        CONFIGURE_COMMAND <DISABLE>
-        BUILD_COMMAND make lib
-        INSTALL_COMMAND PREFIX=<INSTALL_DIR> make install)
+include (FindPackageHandleStandardArgs)
 
+find_package_handle_standard_args (hashring
+        REQUIRED_VARS
+        hashring_LIBRARY
+        hashring_INCLUDE_DIR
+        VERSION_VAR hashring_VERSION)
+
+set (hashring_LIBRARIES ${hashring_LIBRARY})
+set (hashring_INCLUDE_DIRS ${hashring_INCLUDE_DIR})
+
+if (hashring_FOUND AND NOT (TARGET hashring::hashring))
+    add_library (hashring::hashring SHARED IMPORTED)
+    set_target_properties (hashring::hashring
+            PROPERTIES
+            IMPORTED_LOCATION ${hashring_LIBRARIES}
+            INTERFACE_INCLUDE_DIRECTORIES ${hashring_INCLUDE_DIRS})
+endif ()
