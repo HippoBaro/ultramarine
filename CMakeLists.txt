@@ -31,6 +31,7 @@ include(Cooking OPTIONAL)
 
 project(ultramarine CXX)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Options
 option(ULTRAMARINE_BUILD_APPS "Include apps/ as part of the build" ON)
@@ -40,15 +41,21 @@ option(ULTRAMARINE_BUILD_DOC "Generate API definitions in docs/" OFF)
 
 # Dependencies
 find_package(Seastar 1.0 REQUIRED)
+find_package(HashRing REQUIRED)
 
-# Ultramarine
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# Ultramarine actors
 add_library(ultramarine-actor INTERFACE)
 target_link_libraries(ultramarine-actor INTERFACE Seastar::seastar)
 target_include_directories(ultramarine-actor
         INTERFACE include
         )
 add_library(Ultramarine::actor ALIAS ultramarine-actor)
+
+# Ultramarine cluster
+add_library(ultramarine-cluster INTERFACE)
+target_link_libraries(ultramarine-cluster INTERFACE Ultramarine::actor hashring::hashring)
+target_compile_definitions(ultramarine-cluster INTERFACE ULTRAMARINE_REMOTE)
+add_library(Ultramarine::cluster ALIAS ultramarine-cluster)
 
 # Apps
 if (${ULTRAMARINE_BUILD_APPS})

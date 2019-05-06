@@ -24,25 +24,16 @@
 
 #pragma once
 
-#include <seastar/core/reactor.hh>
+#include <string>
 
-namespace ultramarine {
+namespace ultramarine::cluster {
+    struct node {
+        bool local;
 
-    /// [ultramarine::actor]() are identified internally via an unsigned integer id
-    /// \unique_name ultramarine::actor_id
-    using actor_id = std::size_t;
+        node(bool local) : local(local) {}
 
-    /// A round-robin placement strategy that shards actors based on the modulo of their [ultramarine::actor::KeyType]()
-    /// \unique_name ultramarine::round_robin_local_placement_strategy
-    struct round_robin_local_placement_strategy {
-        /// \param A hashed [ultramarine::actor::KeyType]()
-        /// \returns The location the actor should be placed in
-        seastar::shard_id operator()(std::size_t hash) const noexcept {
-            return hash % seastar::smp::count;
+        [[nodiscard]] constexpr bool is_local_node() {
+            return local;
         }
     };
-
-    /// Default local placement strategy uses [ultramarine::round_robin_local_placement_strategy]()
-    /// \unique_name ultramarine::default_local_placement_strategy
-    using default_local_placement_strategy = round_robin_local_placement_strategy;
 }
