@@ -28,6 +28,7 @@
 #include <string_view>
 #include <seastar/core/future.hh>
 #include "node.hpp"
+#include "distributed_membership_service.hpp"
 
 extern "C" {
 #include <hash_ring.h>
@@ -35,32 +36,38 @@ extern "C" {
 
 namespace ultramarine::cluster {
     /// \exclude
-    struct distributed_directory {
+    struct distributed_directory : public seastar::weakly_referencable<distributed_directory> {
     private:
         using ring_ptr = std::unique_ptr<hash_ring_t, void (*)(hash_ring_t *)>;
         ring_ptr ring;
-        std::string node_name;
+        std::unique_ptr<event_listener<node>> imported_endpoint_listener = nullptr;
+        node local_node;
 
     public:
-        explicit distributed_directory(seastar::sstring nodename) :
-                ring(ring_ptr(hash_ring_create(1, HASH_FUNCTION_SHA1), hash_ring_free)),
-                node_name(nodename.c_str(), nodename.size()) {
-            hash_ring_add_node(ring.get(), (uint8_t *)node_name.c_str(), node_name.size());
+        explicit distributed_directory(node const &local,
+                                       seastar::sharded<imported_actor_endpoints_service> *endpoint) :
+                ring(ring_ptr(hash_ring_create(1, HASH_FUNCTION_SHA1), hash_ring_free)), local_node(local) {
+            auto identity = local_node.make_identity();
+            hash_ring_add_node(ring.get(), (uint8_t *) &identity, sizeof(identity));
         }
 
-        void add_remote_directory(seastar::sstring nodename) {
-            hash_ring_add_node(ring.get(), (uint8_t *)nodename.c_str(), nodename.size());
-        }
+        void set_event_listener(std::unique_ptr<event_listener<node>> listener) {
+            imported_endpoint_listener = std::move(listener);
+            imported_endpoint_listener->set_callback([this](node const &n) {
+                auto identity = n.make_identity();
+                hash_ring_add_node(ring.get(), (uint8_t *) &identity, sizeof(identity));
+                return seastar::make_ready_future();
+            });
+        };
 
-        void remove_remote_directory(seastar::sstring nodename) {
-            hash_ring_remove_node(ring.get(), (uint8_t *)nodename.c_str(), nodename.size());
-        }
-
-        auto node_for_key(std::size_t key) {
-            auto *n = hash_ring_find_node(ring.get(), (uint8_t *)&key, sizeof(key));
-            assert(n != nullptr);
-
-            return node(std::string_view((const char *) n->name, n->nameLen) == node_name);
+        std::optional<node> node_for_key(std::size_t key) const {
+            auto *ptr = hash_ring_find_node(ring.get(), (uint8_t *) &key, sizeof(key));
+            auto pair = (std::pair<uint32_t, uint16_t> *) ptr->name;
+            auto n = node(pair->first, pair->second);
+            if (n != local_node) {
+                return n;
+            }
+            return {};
         }
 
         // needed by seastar::sharded<T>

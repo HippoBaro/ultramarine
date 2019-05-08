@@ -24,16 +24,66 @@
 
 #pragma once
 
-#include <string>
+#include <seastar/net/inet_address.hh>
+#include <seastar/net/ip.hh>
+#include "message_serializer.hpp"
 
 namespace ultramarine::cluster {
     struct node {
-        bool local;
+        seastar::net::inet_address addr;
+        uint16_t port;
 
-        node(bool local) : local(local) {}
+        node() = default;
+        node(seastar::net::inet_address const& addr, uint16_t port) : addr(addr), port(port) {}
+        node(uint32_t ip4, uint16_t port) : addr(seastar::net::ipv4_address(ip4)), port(port) {}
+        node(seastar::sstring ip4, uint16_t port) : addr(seastar::net::ipv4_address(ip4)), port(port) {}
+        node(uint16_t port) : addr(seastar::net::ipv4_address("127.0.0.1")), port(port) {} // FIXME
 
-        [[nodiscard]] constexpr bool is_local_node() {
-            return local;
+        node(node const&) = default;
+        node(node &&) = default;
+
+        node & operator=(node const& n) = default;
+        node & operator=(node && n) = default;
+
+        bool operator==(const node &rhs) const {
+            return addr == rhs.addr && port == rhs.port;
+        }
+
+        bool operator!=(const node &rhs) const {
+            return !(rhs == *this);
+        }
+
+        std::pair<uint32_t, uint16_t> make_identity() const {
+            return std::make_pair(addr.as_ipv4_address().ip.raw, port);
+        }
+
+        char *to_string() const {
+            return inet_ntoa(::in_addr(addr));
+        }
+
+        template <typename Serializer, typename Output>
+        inline void serialize(Serializer, Output& out) const {
+            write_arithmetic_type(out, uint32_t(addr.as_ipv4_address().ip.raw));
+            write_arithmetic_type(out, uint16_t (port));
+        }
+
+        template <typename Serializer, typename Input>
+        static inline node deserialize(Serializer, Input& in) {
+            auto addr = read_arithmetic_type<uint32_t>(in);
+            auto port = read_arithmetic_type<uint16_t >(in);
+            return node(addr, port);
+        }
+    };
+}
+
+namespace std {
+    template<>
+    struct hash<ultramarine::cluster::node> {
+        size_t operator()(const ultramarine::cluster::node& node) const {
+            std::size_t seed = 0;
+            boost::hash_combine(seed, std::hash<seastar::net::inet_address>{}(node.addr));
+            boost::hash_combine(seed, node.port);
+            return seed;
         }
     };
 }

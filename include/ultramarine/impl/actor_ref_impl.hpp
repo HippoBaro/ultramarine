@@ -90,9 +90,9 @@ namespace ultramarine::impl {
 
 #ifdef ULTRAMARINE_REMOTE
         auto remote_node = ultramarine::cluster::service().directory().node_for_key(hash);
-        if (!remote_node.is_local_node()) {
+        if (remote_node) {
             return func(ultramarine::cluster::impl::remote_actor_ref<Actor>(std::forward<KeyType>(key),
-                                                                            hash, std::move(remote_node)));
+                                                                            hash, std::move(*remote_node)));
         }
 #endif
         return func(collocated_actor_ref<Actor>(std::forward<KeyType>(key), hash, shard));

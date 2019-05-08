@@ -24,24 +24,12 @@
 
 #pragma once
 
-#ifndef ULTRAMARINE_REMOTE
-#error "Ultramarine::cluster is not included"
-#endif
+#include <ultramarine/actor.hpp>
 
-#include <seastar/core/future.hh>
-#include <seastar/core/reactor.hh>
-#include "impl/service.hpp"
-#include "impl/node.hpp"
+class simple_actor : public ultramarine::actor<simple_actor> {
+public:
+    seastar::future<> say_hello() const;
+ULTRAMARINE_DEFINE_ACTOR(simple_actor, (say_hello));
+};
 
-namespace ultramarine::cluster {
-    template<typename Func>
-    seastar::future<> with_cluster(node const& local, std::vector<node> &&existing_cluster, Func &&func) {
-        return service().bootstrap(local, std::move(existing_cluster)).then([func = std::forward<Func>(func)] {
-            seastar::engine().at_exit([] {
-                return service().stop();
-            });
-            return func(service());
-        });
-    }
-}
 

@@ -27,6 +27,7 @@
 #include <seastar/core/sharded.hh>
 #include "endpoint_service.hpp"
 #include "distributed_directory.hpp"
+#include "distributed_membership_service.hpp"
 
 /// \exclude
 namespace ultramarine::cluster {
@@ -36,22 +37,36 @@ namespace ultramarine::cluster {
         seastar::sharded<exported_actor_endpoints_service> export_service;
         seastar::sharded<imported_actor_endpoints_service> import_service;
         seastar::sharded<distributed_directory> directory_service;
+        seastar::sharded<distributed_membership_service> membership_service;
     public:
 
-        seastar::future<> init(seastar::sstring node_name, seastar::ipv4_addr const& bind_to) {
-            return directory_service.start(std::move(node_name)).then([this, bind_to] {
-                return seastar::when_all_succeed(export_service.start(bind_to), import_service.start()).discard_result();
+        seastar::future<> bootstrap(node const &local, std::vector<node> &&existing_cluster) {
+            return membership_service.start(seastar::engine().cpu_id()).then([this, local] {
+                return directory_service.start(local, &import_service).then([this, local] {
+                    return seastar::when_all_succeed(export_service.start(local),
+                                                     import_service.start(local, &membership_service));
+                });
+            }).then([this, existing_cluster = std::move(existing_cluster)]() mutable {
+                auto f1 = import_service.invoke_on_all([this](auto &service) {
+                    service.set_event_listener(membership_service.local().make_listener());
+                });
+                auto f2 = directory_service.invoke_on_all([this](auto &service) {
+                    service.set_event_listener(import_service.local().make_listener());
+                });
+                auto f3 = membership_service.invoke_on_all([this](auto &service) {
+                    service.set_event_listener(export_service.local().make_listener());
+                });
+                return seastar::when_all_succeed(std::move(f1), std::move(f2)).then(
+                        [this, existing_cluster = std::move(existing_cluster)]() mutable {
+                            return membership_service.invoke_on_all(
+                                    [existing_cluster = std::move(existing_cluster)](auto &service) mutable {
+                                        return service.join(std::move(existing_cluster));
+                                    });
+                        });
             });
         }
 
-        seastar::future<> connect(seastar::sstring nodename, seastar::socket_address addr) {
-            return import_service.invoke_on_all(&imported_actor_endpoints_service::connect, addr).then(
-                    [this, nodename = std::move(nodename)] {
-                        return directory_service.invoke_on_all(&distributed_directory::add_remote_directory, nodename);
-                    });
-        }
-
-        inline distributed_directory& directory() {
+        inline distributed_directory const &directory() const {
             if (!directory_service.local_is_initialized()) {
                 seastar::log("panic: accessing uninitialized cluster directory\n");
                 std::abort();
@@ -59,13 +74,13 @@ namespace ultramarine::cluster {
             return directory_service.local();
         }
 
-        inline imported_actor_endpoints_service& import() {
-            return import_service.local();
+        inline seastar::weak_ptr<imported_actor_endpoints_service> import() {
+            return import_service.local().weak_from_this();
         }
 
         seastar::future<> stop() {
             return seastar::when_all_succeed(export_service.stop(), import_service.stop(),
-                                             directory_service.stop()).discard_result();
+                                             directory_service.stop(), membership_service.stop()).discard_result();
         }
     };
 

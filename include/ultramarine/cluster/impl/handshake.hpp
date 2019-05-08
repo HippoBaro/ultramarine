@@ -24,24 +24,22 @@
 
 #pragma once
 
-#ifndef ULTRAMARINE_REMOTE
-#error "Ultramarine::cluster is not included"
-#endif
+#include "node.hpp"
 
-#include <seastar/core/future.hh>
-#include <seastar/core/reactor.hh>
-#include "impl/service.hpp"
-#include "impl/node.hpp"
+namespace ultramarine::cluster::impl {
+    struct handshake {
+        node origin;
+        std::vector<node> known_nodes;
 
-namespace ultramarine::cluster {
-    template<typename Func>
-    seastar::future<> with_cluster(node const& local, std::vector<node> &&existing_cluster, Func &&func) {
-        return service().bootstrap(local, std::move(existing_cluster)).then([func = std::forward<Func>(func)] {
-            seastar::engine().at_exit([] {
-                return service().stop();
-            });
-            return func(service());
-        });
-    }
+        template <typename Serializer, typename Output>
+        inline void serialize(Serializer s, Output& out) const {
+            origin.serialize(s, out);
+            //write(s, out, known_nodes);
+        }
+
+        template <typename Serializer, typename Input>
+        static inline handshake deserialize(Serializer s, Input& in) {
+            return handshake { node::deserialize(s, in)}; // read(s, in, seastar::rpc::type<std::vector<node>>{})
+        }
+    };
 }
-

@@ -117,4 +117,34 @@ namespace ultramarine::cluster {
         return ret;
     }
 
+    template <typename Output, typename T>
+    inline void write(serializer s, Output& out, const std::vector<T>& v) {
+        write_arithmetic_type(out, uint32_t(v.size()));
+        for (const auto &item : v) {
+            item.serialize(s, out);
+        }
+    }
+
+    template <typename Input, typename T>
+    inline std::vector<T> read(serializer s, Input& in, seastar::rpc::type<std::vector<T>>) {
+        auto size = read_arithmetic_type<uint32_t>(in);
+        std::vector<T> ret(size);
+        for (int j = 0; j < size; ++j) {
+            T::deserialize(s, in);
+        }
+        return ret;
+    }
+
+    //Fallback on object member
+    template <typename Output, typename T>
+    inline void write(serializer s, Output& out, const T& v) {
+        v.serialize(s, out);
+    }
+
+    //Fallback on object member
+    template <typename Input, typename T>
+    inline T read(serializer s, Input& in, seastar::rpc::type<T>) {
+        return T::deserialize(s, in);
+    }
+
 }
