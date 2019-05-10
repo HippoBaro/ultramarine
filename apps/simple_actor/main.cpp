@@ -25,10 +25,7 @@
 #include <seastar/core/app-template.hh>
 #include <seastar/core/print.hh>
 #include <ultramarine/actor_ref.hpp>
-#include <seastar/net/dns.hh>
 #include "simple_actor.hpp"
-
-#include <seastar/net/ip.hh>
 
 int main(int ac, char **av) {
     fmt::print("actor_ref size: {}\n", sizeof(ultramarine::actor_ref<simple_actor>));
