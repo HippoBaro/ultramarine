@@ -56,13 +56,6 @@ namespace ultramarine::impl {
             return typename Actor::internal::template interface<collocated_actor_ref<Actor>>{*this};
         }
 
-        template<typename Handler>
-        inline constexpr auto tell(Handler message) const {
-            return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message]() mutable {
-                return actor_directory<Actor>::dispatch_message(std::move(k), h, message);
-            });
-        }
-
         template<typename Handler, typename ...Args>
         inline constexpr auto tell(Handler message, Args &&... args) const {
             return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message, args = std::make_tuple(

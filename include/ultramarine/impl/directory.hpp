@@ -94,27 +94,10 @@ namespace ultramarine {
                 }
             }
 
-            template<typename Handler>
-            static constexpr auto dispatch_message(Actor *activation, Handler message) {
-                if constexpr (is_reentrant_v<Actor>) {
-                    return (activation->*vtable<Actor>::table[message])();
-                } else {
-                    return seastar::with_semaphore(activation->semaphore, 1, std::chrono::seconds(1),
-                                                   [message, activation] {
-                                                       return (activation->*vtable<Actor>::table[message])();
-                                                   });
-                }
-            }
-
             template<typename KeyType, typename Handler, typename ...Args>
             static constexpr auto dispatch_message(KeyType &&key, actor_id id, Handler message, Args &&... args) {
                 return dispatch_message(hold_activation(std::forward<KeyType>(key), id), message,
                                         std::forward<Args>(args) ...);
-            }
-
-            template<typename KeyType, typename Handler>
-            static constexpr auto dispatch_message(KeyType &&key, actor_id id, Handler message) {
-                return dispatch_message(hold_activation(std::forward<KeyType>(key), id), message);
             }
         };
     }

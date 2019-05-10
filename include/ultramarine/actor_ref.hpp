@@ -94,17 +94,6 @@ namespace ultramarine {
                 });
             }();
         }
-
-        /// Enqueue a message to the [ultramarine::actor]() referenced by this [ultramarine::actor_ref]() instance
-        /// \effects Creates the [ultramarine::actor]() if it doesn't exist
-        /// \param message The message handler to enqueue
-        /// \returns A future representing the eventually returned value by the actor, or a failed future
-        template<typename Handler>
-        constexpr auto inline tell(Handler message) const {
-            return visit([message](auto const &impl) {
-                return impl.tell(message);
-            });
-        };
     };
 
     /// A movable and copyable reference to an [ultramarine::actor]()
@@ -165,17 +154,6 @@ namespace ultramarine {
                 });
             }();
         }
-
-        /// Enqueue a message to the [ultramarine::actor]() referenced by this [ultramarine::actor_ref]() instance
-        /// \effects Creates the [ultramarine::actor]() if it doesn't exist
-        /// \param message The message handler to enqueue
-        /// \returns A future representing the eventually returned value by the actor, or a failed future
-        template<typename Handler>
-        constexpr auto inline tell(Handler message) const {
-            return visit([message](auto const &impl) {
-                return impl.tell(message);
-            });
-        };
     };
 
     /// A movable and copyable type-erased reference to a virtual actor.
