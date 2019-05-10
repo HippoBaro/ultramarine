@@ -24,10 +24,25 @@
 
 #pragma once
 
+#include <unordered_map>
+#include <functional>
+#include <boost/noncopyable.hpp>
 #include <ultramarine/actor_ref.hpp>
-#include "global_message_handlers.hpp"
+#include "message_serializer.hpp"
 
-namespace ultramarine::cluster {
+namespace ultramarine::cluster::impl {
+
+    struct static_init : public boost::noncopyable {
+        explicit static_init(void (*func)()) {
+            func();
+        }
+    };
+
+    inline auto &message_handler_registry() {
+        static std::unordered_map<uint32_t, std::function<void(rpc_proto *)>> init_handlers = {};
+        return init_handlers;
+    }
+
     template<typename Actor, typename ActorKey, typename Ret, typename Class, typename ...Args, typename Handler>
     static constexpr void __attribute__ ((used))
     register_remote_endpoint(Ret (Class::*fptr)(Args...), Handler message) {
@@ -36,7 +51,7 @@ namespace ultramarine::cluster {
                 return ultramarine::get<Actor>(std::forward<ActorKey>(key)).tell(message, std::forward<Args>(args)...);
             });
         };
-        impl::remote_init_handlers().insert({message.value, reg});
+        message_handler_registry().insert({message.value, reg});
     }
 
     template<typename Actor, typename ActorKey, typename Ret, typename Class, typename ...Args, typename Handler>
@@ -47,6 +62,6 @@ namespace ultramarine::cluster {
                 return ultramarine::get<Actor>(std::forward<ActorKey>(key)).tell(message, std::forward<Args>(args)...);
             });
         };
-        impl::remote_init_handlers().insert({message.value, reg});
+        message_handler_registry().insert({message.value, reg});
     }
 }

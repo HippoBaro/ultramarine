@@ -25,23 +25,18 @@
 #pragma once
 
 #include <boost/preprocessor/seq/for_each_i.hpp>
-#include "static_init.hpp"
-#include "remote_endpoint.hpp"
+#include "message_handler_registry.hpp"
 #include "ultramarine/impl/message_identifier.hpp"
 
 /// \exclude
 #define ULTRAMARINE_MAKE_REMOTE_ENDPOINT(a, data, i, name)                                                          \
-    ultramarine::cluster::register_remote_endpoint<data, KeyType>(&data::name, internal::message::name());          \
-
-/// \exclude
-#define ULTRAMARINE_MAKE_REMOTE_TUPLE(a, data, i, name)                                                             \
-    boost::hana::make_pair(internal::message::name(),                                                               \
-            ultramarine::cluster::impl::remote_endpoint_id(internal::message::name())),                             \
+    ultramarine::cluster::impl::register_remote_endpoint<data, KeyType>(&data::name, internal::message::name());    \
 
 /// \exclude
 #define ULTRAMARINE_REMOTE_MAKE_VTABLE(name, seq)                                                                   \
 static constexpr void export_vtable() {                                                                             \
   BOOST_PP_SEQ_FOR_EACH_I(ULTRAMARINE_MAKE_REMOTE_ENDPOINT, name, seq);                                             \
 }                                                                                                                   \
-static inline ultramarine::impl::static_init init = ultramarine::impl::static_init(&export_vtable);                 \
+static inline                                                                                                       \
+ultramarine::cluster::impl::static_init init = ultramarine::cluster::impl::static_init(&export_vtable);             \
 

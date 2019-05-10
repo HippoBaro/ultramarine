@@ -82,10 +82,9 @@ namespace ultramarine::impl {
         auto shard = typename Actor::PlacementStrategy{}(hash);
 
 #ifdef ULTRAMARINE_REMOTE
-        auto remote_node = ultramarine::cluster::service().directory().node_for_key(hash);
-        if (remote_node) {
-            return func(ultramarine::cluster::impl::remote_actor_ref<Actor>(std::forward<KeyType>(key),
-                                                                            hash, std::move(*remote_node)));
+        using namespace ultramarine::cluster::impl;
+        if (auto remote = cluster::impl::directory<Actor>::hold_remote_peer(std::forward<KeyType>(key), hash); remote) {
+            return func(remote_actor_ref<Actor>(std::forward<KeyType>(key), hash, remote));
         }
 #endif
         return func(collocated_actor_ref<Actor>(std::forward<KeyType>(key), hash, shard));

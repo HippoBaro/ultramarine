@@ -24,55 +24,48 @@
 
 #pragma once
 
-#include <memory>
-#include <string_view>
-#include <seastar/core/future.hh>
+#include "ultramarine/impl/directory.hpp"
 #include "node.hpp"
-#include "distributed_membership_service.hpp"
+#include "message_serializer.hpp"
+#include "membership.hpp"
 
-extern "C" {
-#include <hash_ring.h>
-}
+namespace ultramarine::cluster::impl {
 
-namespace ultramarine::cluster {
-    /// \exclude
-    struct distributed_directory : public seastar::weakly_referencable<distributed_directory> {
-    private:
-        using ring_ptr = std::unique_ptr<hash_ring_t, void (*)(hash_ring_t *)>;
-        ring_ptr ring;
-        std::unique_ptr<event_listener<node>> imported_endpoint_listener = nullptr;
-        node local_node;
+    template<typename T>
+    using ActorKey = ultramarine::impl::ActorKey<T>;
 
-    public:
-        explicit distributed_directory(node const &local,
-                                       seastar::sharded<imported_actor_endpoints_service> *endpoint) :
-                ring(ring_ptr(hash_ring_create(1, HASH_FUNCTION_SHA1), hash_ring_free)), local_node(local) {
-            auto identity = local_node.make_identity();
-            hash_ring_add_node(ring.get(), (uint8_t *) &identity, sizeof(identity));
+    template<typename Actor>
+    struct directory {
+        [[nodiscard]] static constexpr node const * hold_remote_peer(ActorKey<Actor> const& key, std::size_t hash) {
+            return membership::service.local().node_for_key(hash);
         }
 
-        void set_event_listener(std::unique_ptr<event_listener<node>> listener) {
-            imported_endpoint_listener = std::move(listener);
-            imported_endpoint_listener->set_callback([this](node const &n) {
-                auto identity = n.make_identity();
-                hash_ring_add_node(ring.get(), (uint8_t *) &identity, sizeof(identity));
-                return seastar::make_ready_future();
-            });
-        };
-
-        std::optional<node> node_for_key(std::size_t key) const {
-            auto *ptr = hash_ring_find_node(ring.get(), (uint8_t *) &key, sizeof(key));
-            auto pair = (std::pair<uint32_t, uint16_t> *) ptr->name;
-            auto n = node(pair->first, pair->second);
-            if (n != local_node) {
-                return n;
-            }
-            return {};
+        template<typename Ret, typename Class, typename ...Args>
+        static constexpr auto
+        dispatch_message(node const &n, ActorKey<Actor> const& key, Ret (Class::*fptr)(Args...) const, uint32_t id) {
+            return n.rpc->make_client<Ret(ActorKey<Actor>, Args...)>(id)(*n.client, key);
         }
 
-        // needed by seastar::sharded<T>
-        seastar::future<> stop() {
-            return seastar::make_ready_future();
+        template<typename Ret, typename Class, typename ...FArgs, typename ...Args>
+        static constexpr auto
+        dispatch_message(node const &n, ActorKey<Actor> const& key, Ret (Class::*fptr)(FArgs...) const, uint32_t id,
+                         Args &&... args) {
+            return n.rpc->make_client<Ret(ActorKey<Actor>, FArgs...)>(id)(*n.client, key, std::forward<Args>(args) ...);
+        }
+
+        template<typename Ret, typename Class, typename ...Args>
+        static constexpr auto
+        dispatch_message(node const &n, ActorKey<Actor> const& key, Ret (Class::*fptr)(Args...), uint32_t id) {
+            return n.rpc->make_client<Ret(ActorKey<Actor>, Args...)>(id)(*n.client, key);
+        }
+
+        template<typename Ret, typename Class, typename ...FArgs, typename ...Args>
+        static constexpr auto
+        dispatch_message(node const &n, ActorKey<Actor> const& key, Ret (Class::*fptr)(FArgs...), uint32_t id,
+                         Args &&... args) {
+            return n.rpc->make_client<Ret(ActorKey<Actor>, FArgs...)>(id)(*n.client, key, std::forward<Args>(args) ...);
         }
     };
+
+
 }

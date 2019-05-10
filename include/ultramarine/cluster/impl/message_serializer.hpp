@@ -24,9 +24,12 @@
 
 #pragma once
 
+#include <vector>
 #include <string>
 #include <seastar/rpc/rpc.hh>
 #include <seastar/rpc/rpc_types.hh>
+#include <seastar/net/inet_address.hh>
+#include <seastar/net/ip.hh>
 
 namespace ultramarine::cluster {
 
@@ -36,20 +39,21 @@ namespace ultramarine::cluster {
     using rpc_proto = seastar::rpc::protocol<ultramarine::cluster::serializer>;
 
     template<typename T, typename Output>
-    inline static
-    void write_arithmetic_type(Output &out, T v) {
+    inline static void write_arithmetic_type(Output &out, T v) {
         static_assert(std::is_arithmetic<T>::value, "must be arithmetic type");
         return out.write(reinterpret_cast<const char *>(&v), sizeof(T));
     }
 
     template<typename T, typename Input>
-    inline static
-    T read_arithmetic_type(Input &in) {
+    inline static T read_arithmetic_type(Input &in) {
         static_assert(std::is_arithmetic<T>::value, "must be arithmetic type");
         T v;
         in.read(reinterpret_cast<char *>(&v), sizeof(T));
         return v;
     }
+
+
+    // SCALARS
 
     template<typename Output>
     inline static void write(serializer, Output &output, int32_t v) { return write_arithmetic_type(output, v); }
@@ -95,6 +99,10 @@ namespace ultramarine::cluster {
         out.write(v.c_str(), v.size());
     }
 
+
+    // BUILT-IN TYPES
+
+
     template<typename Input>
     inline static std::string read(serializer, Input &in, seastar::rpc::type<std::string>) {
         auto size = read_arithmetic_type<uint32_t>(in);
@@ -117,34 +125,47 @@ namespace ultramarine::cluster {
         return ret;
     }
 
+    template <typename Output>
+    inline void write(serializer s, Output& out, const seastar::socket_address& v) {
+        write_arithmetic_type(out, uint32_t(v.addr().as_ipv4_address().ip.raw));
+        write_arithmetic_type(out, uint16_t (v.port()));
+    }
+
+    template <typename Input>
+    inline seastar::socket_address read(serializer s, Input& in, seastar::rpc::type<seastar::socket_address>) {
+        auto endpoint = read_arithmetic_type<uint32_t>(in);
+        auto port = read_arithmetic_type<uint16_t >(in);
+        return seastar::socket_address(endpoint, port);
+    }
+
     template <typename Output, typename T>
     inline void write(serializer s, Output& out, const std::vector<T>& v) {
         write_arithmetic_type(out, uint32_t(v.size()));
         for (const auto &item : v) {
-            item.serialize(s, out);
+            write(s, out, item);
         }
     }
 
     template <typename Input, typename T>
     inline std::vector<T> read(serializer s, Input& in, seastar::rpc::type<std::vector<T>>) {
         auto size = read_arithmetic_type<uint32_t>(in);
-        std::vector<T> ret(size);
+        std::vector<T> ret;
         for (int j = 0; j < size; ++j) {
-            T::deserialize(s, in);
+            ret.emplace_back(read(s, in, seastar::rpc::type<T>{}));
         }
         return ret;
     }
+
+    // CLASS USER-PROVIDED
 
     //Fallback on object member
     template <typename Output, typename T>
     inline void write(serializer s, Output& out, const T& v) {
         v.serialize(s, out);
     }
-
     //Fallback on object member
     template <typename Input, typename T>
     inline T read(serializer s, Input& in, seastar::rpc::type<T>) {
         return T::deserialize(s, in);
     }
-
 }

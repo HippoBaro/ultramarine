@@ -26,27 +26,21 @@
 
 #include <seastar/core/future.hh>
 #include <seastar/core/reactor.hh>
-#include <ultramarine/impl/directory.hpp>
-#include "service.hpp"
-#include "node.hpp"
+#include "distributed_directory.hpp"
 
 namespace ultramarine::cluster::impl {
     template<typename Actor>
     class remote_actor_ref {
         ultramarine::impl::ActorKey<Actor> key;
-        ultramarine::cluster::node loc;
-        seastar::weak_ptr<imported_actor_endpoints_service> client;
+        node const *loc;
 
     public:
         using ActorType = Actor;
 
-        explicit constexpr remote_actor_ref(ultramarine::impl::ActorKey<Actor> k, std::size_t hash,
-                                            ultramarine::cluster::node &&loc) :
-                key(std::move(k)), loc(std::move(loc)),
-                client(ultramarine::cluster::service().import()) {}
+        explicit constexpr remote_actor_ref(ultramarine::impl::ActorKey<Actor> k, std::size_t hash, node const *loc) :
+                key(std::move(k)), loc(loc) {}
 
-        constexpr remote_actor_ref(remote_actor_ref const &other) : key(other.key), loc(other.loc),
-                                                                    client(ultramarine::cluster::service().import()) {}
+        constexpr remote_actor_ref(remote_actor_ref const &) = default;
 
         constexpr remote_actor_ref(remote_actor_ref &&) noexcept = default;
 
@@ -56,21 +50,14 @@ namespace ultramarine::cluster::impl {
 
         template<typename Handler>
         inline constexpr auto tell(Handler message) const {
-            if (client) {
-                return client->remote_dispatch(loc, key, ultramarine::impl::vtable<Actor>::table[message], message.value);
-            } else {
-                throw std::runtime_error("imported actor message service down");
-            }
+            return directory<Actor>::dispatch_message(*loc, key, ultramarine::impl::vtable<Actor>::table[message],
+                                                      message.value);
         }
 
         template<typename Handler, typename ...Args>
         inline constexpr auto tell(Handler message, Args &&... args) const {
-            if (client) {
-                return client->remote_dispatch(loc, key, ultramarine::impl::vtable<Actor>::table[message], message.value(),
-                                               std::forward<Args>(args) ...);
-            } else {
-                throw std::runtime_error("imported actor message service down");
-            }
+            return directory<Actor>::dispatch_message(*loc, key, ultramarine::impl::vtable<Actor>::table[message],
+                                                      message.value, std::forward<Args>(args) ...);
         }
     };
 }

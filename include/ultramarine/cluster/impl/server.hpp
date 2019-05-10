@@ -24,13 +24,27 @@
 
 #pragma once
 
-#include <map>
-#include <functional>
+#include <memory>
 #include "message_serializer.hpp"
+#include "node.hpp"
+#include "message_handler_registry.hpp"
 
 namespace ultramarine::cluster::impl {
-    static auto &remote_init_handlers() {
-        static std::unordered_map<uint32_t, std::function<void(rpc_proto *)>> init_handlers = {};
-        return init_handlers;
-    }
+    class server {
+    private:
+        rpc_proto proto{serializer{}};
+        std::unique_ptr<rpc_proto::server> rpc;
+        seastar::socket_address local;
+
+    public:
+        explicit server(seastar::socket_address const &local);
+
+        seastar::future<> stop();
+        static inline seastar::sharded<server> service;
+        static inline seastar::future<> start(seastar::socket_address const& local);
+    };
 }
+
+
+
+

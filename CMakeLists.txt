@@ -24,7 +24,7 @@
 
 cmake_minimum_required(VERSION 3.5)
 
-list (APPEND CMAKE_MODULE_PATH
+list(APPEND CMAKE_MODULE_PATH
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake
         ${CMAKE_CURRENT_BINARY_DIR})
 include(Cooking OPTIONAL)
@@ -52,8 +52,13 @@ target_include_directories(ultramarine-actor
 add_library(Ultramarine::actor ALIAS ultramarine-actor)
 
 # Ultramarine cluster
-add_library(ultramarine-cluster INTERFACE)
-target_link_libraries(ultramarine-cluster INTERFACE Ultramarine::actor hashring::hashring)
+add_library(ultramarine-cluster STATIC
+        src/server.cpp
+        src/membership.cpp
+        src/node.cpp
+        src/handshake.cpp)
+target_include_directories(ultramarine-cluster PRIVATE include)
+target_link_libraries(ultramarine-cluster PUBLIC Seastar::seastar INTERFACE Ultramarine::actor PRIVATE hashring::hashring Concepts::concepts)
 target_compile_definitions(ultramarine-cluster INTERFACE ULTRAMARINE_REMOTE)
 add_library(Ultramarine::cluster ALIAS ultramarine-cluster)
 

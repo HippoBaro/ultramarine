@@ -22,40 +22,34 @@
  * SOFTWARE.
  */
 
-#pragma once
-
-#include <seastar/net/inet_address.hh>
-#include <seastar/net/ip.hh>
-#include "message_serializer.hpp"
+#include <ultramarine/cluster/impl/node.hpp>
 
 namespace ultramarine::cluster::impl {
-    struct node {
-        seastar::socket_address endpoint;
-        seastar::lw_shared_ptr<rpc_proto::client> client;
-        rpc_proto *rpc;
+    node::node(uint32_t ip4, uint16_t port) : endpoint(seastar::net::ipv4_address(ip4), port), client(nullptr),
+                                              rpc(nullptr) {}
 
-        node(uint32_t ip4, uint16_t port);
-        node(rpc_proto *proto, seastar::lw_shared_ptr<rpc_proto::client> &&client);
+    node::node(rpc_proto *proto, seastar::lw_shared_ptr<rpc_proto::client> &&client) : endpoint(client->peer_address()),
+                                                                                       client(std::move(client)),
+                                                                                       rpc(proto) {}
 
-        node(node const &) = default;
+    bool node::operator==(const node &rhs) const {
+        return endpoint == rhs.endpoint;
+    }
 
-        node(node &&) = default;
+    bool node::operator!=(const node &rhs) const {
+        return !(rhs == *this);
+    }
 
-        node &operator=(node const &n) = default;
-
-        node &operator=(node &&n) = default;
-
-        bool operator==(const node &rhs) const;
-
-        bool operator!=(const node &rhs) const;
-
-        explicit operator seastar::socket_address() const;
-    };
+    node::operator seastar::socket_address() const {
+        return endpoint;
+    }
 }
 
 namespace std {
-    template<>
-    struct hash<ultramarine::cluster::impl::node> {
-        size_t operator()(ultramarine::cluster::impl::node const &node) const;
-    };
+    size_t hash<ultramarine::cluster::impl::node>::operator()(ultramarine::cluster::impl::node const &node) const {
+        std::size_t seed = 0;
+        boost::hash_combine(seed, std::hash<uint32_t>{}(node.endpoint.addr().as_ipv4_address().ip.raw));
+        boost::hash_combine(seed, node.endpoint.port());
+        return seed;
+    }
 }

@@ -24,24 +24,35 @@
 
 #pragma once
 
-#ifndef ULTRAMARINE_REMOTE
-#error "Ultramarine::cluster is not included"
-#endif
-
 #include <seastar/core/future.hh>
 #include <seastar/core/reactor.hh>
-#include "impl/service.hpp"
-#include "impl/node.hpp"
+#include <ultramarine/cluster/impl/server.hpp>
+#include <ultramarine/cluster/impl/membership.hpp>
 
 namespace ultramarine::cluster {
     template<typename Func>
-    seastar::future<> with_cluster(node const& local, std::vector<node> &&existing_cluster, Func &&func) {
-        return service().bootstrap(local, std::move(existing_cluster)).then([func = std::forward<Func>(func)] {
+    auto with_cluster(seastar::socket_address const &local, std::vector<seastar::socket_address> &&peers, Func &&func) {
+        return seastar::when_all_succeed(impl::membership::service.start(local),
+                                         impl::server::service.start(local)).then([peers = std::move(peers)] {
             seastar::engine().at_exit([] {
-                return service().stop();
+                return seastar::when_all(impl::membership::service.stop(),
+                                         impl::server::service.stop()).discard_result();
             });
-            return func(service());
+            return seastar::parallel_for_each(peers, [](seastar::socket_address const &peer) {
+                return impl::membership::service.invoke_on_all([peer](auto &service) {
+                    return service.try_add_peer(peer);
+                });
+            }).then([peers] {
+                if (!peers.empty() && !impl::membership::service.local().is_connected_to_cluster()) {
+                    return seastar::make_exception_future(std::runtime_error("Failed to join cluster"));
+                } else if (peers.empty()) {
+                    seastar::print("No cluster to join, assuming bootstrap node\n");
+                }
+                return seastar::make_ready_future();
+            });
+        }).discard_result().then([func = std::forward<Func>(func)] {
+            seastar::print("Calling user code\n");
+            return func();
         });
     }
 }
-

@@ -22,15 +22,15 @@
  * SOFTWARE.
  */
 
-#pragma once
+#include <ultramarine/cluster/impl/handshake.hpp>
 
-#include <functional>
-#include <boost/noncopyable.hpp>
+namespace ultramarine::cluster::impl {
+    handshake_request::handshake_request(std::vector<seastar::socket_address> peers,
+                                         const seastar::socket_address &origin)
+            : known_nodes(std::move(peers)), origin(origin) {}
 
-namespace ultramarine::impl {
-    struct static_init : public boost::noncopyable {
-        explicit static_init(void (*func)()) {
-            func();
-        }
-    };
+    handshake_response::handshake_response(std::vector<seastar::socket_address> peers, size_t shard_count)
+            : known_nodes(std::move(peers)), shard_count(shard_count) {}
 }
+
+
