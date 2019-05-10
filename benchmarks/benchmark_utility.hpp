@@ -28,7 +28,6 @@
 #include <numeric>
 #include <seastar/core/app-template.hh>
 #include <seastar/core/print.hh>
-#include <ultramarine/cluster/impl/service.hpp>
 
 #define ULTRAMARINE_BENCH(name) {#name, name}
 

@@ -39,19 +39,6 @@ int main(int ac, char **av) {
 
     seastar::app_template app;
     return app.run(ac, av, [] {
-        return seastar::engine().net().initialize().then([] {
-            return seastar::net::dns::get_host_by_name("localhost.localdomain").then([] (seastar::net::hostent res) {
-                for (const auto &item : res.addr_list) {
-                    inet_ntoa(in_addr(item));
-                    printf("%s\n", item.is_ipv4() ? inet_ntoa(in_addr(item)) : "v6");
-                }
-                for (const auto &item : res.names) {
-                    printf(" -> %s\n", item.c_str());
-                }
-                return seastar::make_ready_future();
-            });
-        });
-
-        //return ultramarine::get<simple_actor>("Ultra")->say_hello();
+        return ultramarine::get<simple_actor>("Ultra")->say_hello();
     });
 }
