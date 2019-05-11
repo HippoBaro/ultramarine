@@ -60,16 +60,9 @@ namespace ultramarine::cluster::impl {
     }
 
     seastar::future<> membership::try_add_peer(seastar::socket_address endpoint) {
-        auto id = make_peer_string_identity(endpoint);
-        // If the endpoint is already part of the cluster;
-        if (nodes.count(node(endpoint.addr().as_ipv4_address().ip.raw, endpoint.port())) > 0) {
-            seastar::print("%u: Peer %s is already part of the cluster, skipping\n", seastar::engine().cpu_id(),
-                           id.first);
-            return seastar::make_ready_future();
-        }
-        // If the endpoint is already being contacted
-        if (connecting_nodes.count(endpoint) > 0) {
-            seastar::print("%u: Peer %s is already being contacted, skipping\n", seastar::engine().cpu_id(), id.first);
+        // If the endpoint is already part of the cluster or if the endpoint is already being contacted
+        if (nodes.count(node(endpoint.addr().as_ipv4_address().ip.raw, endpoint.port())) > 0 ||
+            connecting_nodes.count(endpoint) > 0) {
             return seastar::make_ready_future();
         }
         connecting_nodes.insert(endpoint);
@@ -84,10 +77,7 @@ namespace ultramarine::cluster::impl {
                     return seastar::make_ready_future();
                 });
             });
-        }).handle_exception([endpoint](auto ex) {
-            auto identity = make_peer_string_identity(endpoint);
-            seastar::print("%u: Failed to contact peer at %s\n", seastar::engine().cpu_id(), identity.first);
-        }).finally([this, endpoint] {
+        }).handle_exception([endpoint](std::exception_ptr ex) { }).finally([this, endpoint] {
             connecting_nodes.erase(endpoint);
         });
     }
@@ -102,7 +92,6 @@ namespace ultramarine::cluster::impl {
     }
 
     seastar::future<> membership::stop() {
-        seastar::print("closing gate\n");
         return candidate_connection_gate.close().then([this] {
             return seastar::do_until(
                     [this] { return candidate_connection_job.available() || candidate_connection_job.failed(); },

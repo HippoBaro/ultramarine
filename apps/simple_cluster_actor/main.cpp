@@ -85,7 +85,7 @@ int main(int ac, char **av) {
     fmt::print(" -- key size: {}\n", sizeof(simple_actor::KeyType));
 
     return app.run(ac, av, [] {
-        return ultramarine::cluster::with_cluster(seastar::socket_address(seastar::net::inet_address("127.0.0.1"), 5555U), { }, [] {
+        return ultramarine::cluster::with_cluster(seastar::socket_address(seastar::net::inet_address("127.0.0.1"), 5555U), [] {
             return seastar::sleep(std::chrono::hours(10));
         });
     });

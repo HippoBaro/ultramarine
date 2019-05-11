@@ -30,28 +30,23 @@
 #include <ultramarine/cluster/impl/membership.hpp>
 
 namespace ultramarine::cluster {
+    seastar::future<>
+    with_cluster_impl(seastar::socket_address const &local, std::vector<seastar::socket_address> &&peers);
+
     template<typename Func>
-    auto with_cluster(seastar::socket_address const &local, std::vector<seastar::socket_address> &&peers, Func &&func) {
-        return seastar::when_all_succeed(impl::membership::service.start(local),
-                                         impl::server::service.start(local)).then([peers = std::move(peers)] {
-            seastar::engine().at_exit([] {
-                return seastar::when_all(impl::membership::service.stop(),
-                                         impl::server::service.stop()).discard_result();
-            });
-            return seastar::parallel_for_each(peers, [](seastar::socket_address const &peer) {
-                return impl::membership::service.invoke_on_all([peer](auto &service) {
-                    return service.try_add_peer(peer);
-                });
-            }).then([peers] {
-                if (!peers.empty() && !impl::membership::service.local().is_connected_to_cluster()) {
-                    return seastar::make_exception_future(std::runtime_error("Failed to join cluster"));
-                } else if (peers.empty()) {
-                    seastar::print("No cluster to join, assuming bootstrap node\n");
-                }
-                return seastar::make_ready_future();
-            });
-        }).discard_result().then([func = std::forward<Func>(func)] {
-            seastar::print("Calling user code\n");
+    seastar::future<>
+    with_cluster(seastar::socket_address const &local, std::vector<seastar::socket_address> &&peers, Func &&func) {
+        return with_cluster_impl(local, std::move(peers)).then([func = std::forward<Func>(func)] {
+            seastar::print("%d: Calling user code\n", seastar::engine().cpu_id());
+            return func();
+        });
+    }
+
+    template<typename Func>
+    seastar::future<>
+    with_cluster(seastar::socket_address const &local, Func &&func) {
+        return with_cluster_impl(local, {}).then([func = std::forward<Func>(func)] {
+            seastar::print("%d: Calling user code\n", seastar::engine().cpu_id());
             return func();
         });
     }

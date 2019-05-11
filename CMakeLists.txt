@@ -56,7 +56,8 @@ add_library(ultramarine-cluster STATIC
         src/server.cpp
         src/membership.cpp
         src/node.cpp
-        src/handshake.cpp)
+        src/handshake.cpp
+        src/cluster.cpp)
 target_include_directories(ultramarine-cluster PRIVATE include)
 target_link_libraries(ultramarine-cluster PUBLIC Seastar::seastar INTERFACE Ultramarine::actor PRIVATE hashring::hashring Concepts::concepts)
 target_compile_definitions(ultramarine-cluster INTERFACE ULTRAMARINE_REMOTE)
