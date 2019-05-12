@@ -59,7 +59,7 @@ add_library(ultramarine-cluster STATIC
         src/handshake.cpp
         src/cluster.cpp)
 target_include_directories(ultramarine-cluster PRIVATE include)
-target_link_libraries(ultramarine-cluster PUBLIC Seastar::seastar INTERFACE Ultramarine::actor PRIVATE hashring::hashring Concepts::concepts)
+target_link_libraries(ultramarine-cluster PUBLIC Seastar::seastar INTERFACE Ultramarine::actor PRIVATE hashring::hashring)
 target_compile_definitions(ultramarine-cluster INTERFACE ULTRAMARINE_REMOTE)
 add_library(Ultramarine::cluster ALIAS ultramarine-cluster)
 

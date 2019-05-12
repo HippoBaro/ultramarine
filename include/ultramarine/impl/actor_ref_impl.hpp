@@ -66,6 +66,13 @@ namespace ultramarine::impl {
                 }, std::move(args));
             });
         }
+
+        template<typename Handler, typename ...Args>
+        constexpr auto inline tell_packed(Handler message, std::vector<std::tuple<Args...>> &&args) const {
+            return seastar::smp::submit_to(loc, [k = key, h = hash, message, args = std::move(args)]() mutable {
+                return actor_directory<Actor>::dispatch_packed_message(std::move(k), h, message, std::move(args));
+            });
+        }
     };
 
 #ifdef ULTRAMARINE_REMOTE
@@ -99,7 +106,7 @@ namespace ultramarine::impl {
 
     template<typename Actor, typename KeyType>
     [[nodiscard]] constexpr actor_ref_variant<Actor> wrap_actor_ref_impl(KeyType &&key) {
-        return do_with_actor_ref_impl<Actor, KeyType>(std::forward<KeyType>(key), [](auto &&impl) {
+        return do_with_actor_ref_impl<Actor, KeyType>(std::forward<KeyType>(key), [](auto &&impl) mutable {
             return actor_ref_variant<Actor>(std::forward<decltype(impl)>(impl));
         });
     }
