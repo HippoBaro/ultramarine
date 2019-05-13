@@ -91,3 +91,6 @@ add_ultramarine_test(NAME test-local_actor
 
 add_ultramarine_test(NAME test-error_handling
         SOURCES error_handling.cpp)
+
+add_ultramarine_test(NAME test-message_deduplication
+        SOURCES message_deduplication.cpp)
