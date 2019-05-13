@@ -29,9 +29,7 @@
 #include "node.hpp"
 #include "handshake.hpp"
 
-extern "C" {
-#include <hash_ring.h>
-}
+typedef struct hash_ring_t hash_ring_t;
 
 namespace ultramarine::cluster::impl {
     class membership : public seastar::weakly_referencable<membership> {

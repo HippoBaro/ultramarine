@@ -16,13 +16,13 @@ jobs:
           command: |
             cd third-party/seastar
             ./configure.py --mode=release --c++-dialect << parameters.dialect >>
-            ninja seastar -C build/release -j2
-            ninja seastar_testing -C build/release -j2
+            ninja seastar -C build/release -j1
+            ninja seastar_testing -C build/release -j1
       - run:
           command: |
             ./cooking.sh -e Seastar -t Release -- -DULTRAMARINE_BUILD_DOC=OFF -DCMAKE_PREFIX_PATH="`pwd`/third-party/seastar/build/release;`pwd`/third-party/seastar/build/release/_cooking/installed" -DCMAKE_MODULE_PATH="`pwd`/third-party/seastar/cmake"
-            ninja -C build -j2
-            ninja ultramarine-tests -C build -j2
+            ninja -C build -j1
+            ninja ultramarine-tests -C build -j1
       - run:
           command: |
             cd build && ctest --progress

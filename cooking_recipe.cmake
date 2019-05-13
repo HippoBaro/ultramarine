@@ -42,6 +42,8 @@ cooking_ingredient (Seastar
         <DEFAULT>
     COOKING_CMAKE_ARGS
         ${seastarVars}
+        -DSeastar_TESTING=OFF
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
     EXTERNAL_PROJECT_ARGS
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third-party/seastar)
 

@@ -27,6 +27,10 @@
 #include "ultramarine/cluster/impl/membership.hpp"
 #include "ultramarine/cluster/impl/message_handler_registry.hpp"
 
+extern "C" {
+#include <hash_ring.h>
+}
+
 namespace ultramarine::cluster::impl {
 
     static inline std::pair<char *, std::size_t> make_peer_string_identity(seastar::socket_address const &endpoint) {
