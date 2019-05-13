@@ -104,33 +104,24 @@ namespace ultramarine {
             static constexpr auto dispatch_packed_message(KeyType &&key, actor_id id, Handler message,
                                                           std::vector<std::tuple<Args...>> &&args) {
                 using FutReturn = seastar::futurize_t<std::result_of_t<decltype(vtable<Actor>::table[message])(Actor, Args...)>>;
-                using ReturnType = typename FutReturn::value_type;
+                using TReturnType = typename FutReturn::value_type;
+                using ReturnType = std::tuple_element_t<0, TReturnType>;
 
                 auto *activation = hold_activation(std::forward<KeyType>(key), id);
                 std::vector<ReturnType> ret;
                 ret.reserve(std::size(args));
 
-                return seastar::do_with(activation, std::move(ret), std::move(args),
-                        [key = std::forward<KeyType>(key), id, message]
-                        (auto* activation, auto &ret, auto &targs) mutable {
-                    return seastar::parallel_for_each(boost::irange(0UL, targs.size()),
-                            [key = std::forward<KeyType>(key), activation, id, message, &ret, &targs]
-                            (std::size_t i) mutable {
-                        return std::apply([key = std::forward<KeyType>(key), activation, id, message, &ret, i]
-                        (auto &&... args) mutable {
-                            return dispatch_message(activation, message, std::forward<Args>(args) ...)
-                            .then_wrapped([&ret] (auto &&fut) {
-                                if (fut.failed()) {
-                                    return seastar::make_exception_future(fut.get_exception());
-                                }
+                return seastar::do_with(activation, std::move(ret), std::move(args), [key = std::forward<KeyType>(key), id, message] (auto* activation, auto &ret, auto &targs) mutable {
+                    return seastar::parallel_for_each(boost::irange(0UL, targs.size()), [key = std::forward<KeyType>(key), activation, id, message, &ret, &targs] (std::size_t i) mutable {
+                        return std::apply([key = std::forward<KeyType>(key), activation, id, message, &ret, i] (auto &&... args) mutable {
+                            return dispatch_message(activation, message, std::forward<Args>(args) ...).then_wrapped([&ret] (auto &&fut) {
+                                if (fut.failed()) { return seastar::make_exception_future(fut.get_exception()); }
                                 ret.emplace_back(std::move(fut.get0()));
                                 return seastar::make_ready_future();
                             });
                             return seastar::make_ready_future();
                         }, std::move(targs[i]));
-                    }).then([&ret] {
-                        return std::move(ret);
-                    });
+                    }).then([&ret] { return std::move(ret); });
                 });
             }
         };

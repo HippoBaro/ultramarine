@@ -29,18 +29,20 @@
 #include "ultramarine/actor_ref.hpp"
 
 namespace ultramarine::impl {
-    template<typename Actor, typename Message, typename Signature> class deduplicator;
+    template<typename Actor, typename Message, typename Signature>
+    class deduplicator;
 
-    template <typename Actor, typename Message, typename Return, typename... Args>
-    class deduplicator<Actor,Message, Return(Actor::*)(Args...)> {
+    template<typename Actor, typename Message, typename Return, typename... Args>
+    class deduplicator<Actor, Message, Return(Actor::*)(Args...)> {
         Message handler;
         std::vector<std::tuple<Args...>> packed;
-        actor_ref<Actor> ref;
+        actor_ref <Actor> ref;
 
     public:
-        deduplicator(Message handler, actor_ref<Actor> &ref) : handler(handler), ref(ref) {}
+        deduplicator(Message handler, actor_ref <Actor> &ref) : handler(handler), ref(ref) {}
 
-        explicit deduplicator(deduplicator const&) = delete;
+        explicit deduplicator(deduplicator const &) = delete;
+
         explicit deduplicator(deduplicator &&) = default;
 
         template<typename ...TArgs>
@@ -53,16 +55,17 @@ namespace ultramarine::impl {
         }
     };
 
-    template <typename Actor, typename Message, typename Return>
+    template<typename Actor, typename Message, typename Return>
     class deduplicator<Actor, Message, Return(Actor::*)()> {
         Message handler;
         std::size_t counter = 0;
-        actor_ref<Actor> ref;
+        actor_ref <Actor> ref;
 
     public:
-        deduplicator(Message handler, actor_ref<Actor> &ref) : handler(handler), ref(ref) {}
+        deduplicator(Message handler, actor_ref <Actor> &ref) : handler(handler), ref(ref) {}
 
-        explicit deduplicator(deduplicator const&) = delete;
+        explicit deduplicator(deduplicator const &) = delete;
+
         explicit deduplicator(deduplicator &&) = default;
 
 
@@ -75,21 +78,23 @@ namespace ultramarine::impl {
         }
     };
 
-    template <typename Actor, typename Message, typename Return, typename... Args>
-    static constexpr auto deduplicate(actor_ref<Actor> ref, Message handler, Return(Actor::*)(Args...) const) noexcept {
+    template<typename Actor, typename Message, typename Return, typename... Args>
+    static constexpr auto
+    deduplicate(actor_ref <Actor> ref, Message handler, Return(Actor::*)(Args...) const) noexcept {
         return deduplicator<Actor, Message, Return(Actor::*)(Args...)>(handler, ref);
     }
 
-    template <typename Actor, typename Message, typename Return, typename... Args>
-    static constexpr auto deduplicate(actor_ref<Actor> ref, Message handler, Return(Actor::*)(Args...)) noexcept {
+    template<typename Actor, typename Message, typename Return, typename... Args>
+    static constexpr auto deduplicate(actor_ref <Actor> ref, Message handler, Return(Actor::*)(Args...)) noexcept {
         return deduplicator<Actor, Message, Return(Actor::*)(Args...)>(handler, ref);
     }
 
-    template <typename Actor, typename Message, typename Func>
-    constexpr auto deduplicate(actor_ref<Actor> ref, Message handler, Func &&func) noexcept {
+    template<typename Actor, typename Message, typename Func>
+    constexpr auto deduplicate(actor_ref <Actor> ref, Message handler, Func &&func) noexcept {
         constexpr auto handlerptr = vtable<Actor>::table[handler];
-        return seastar::do_with(deduplicate<Actor, Message>(ref, handler, handlerptr), [func = std::forward<Func>(func)] (auto &d) {
-            return func(d).then([&d] { return d.execute(); });
-        });
+        return seastar::do_with(deduplicate<Actor, Message>(ref, handler, handlerptr),
+                                [func = std::forward<Func>(func)](auto &d) {
+                                    return func(d).then([&d] { return d.execute(); });
+                                });
     }
 }
