@@ -61,10 +61,10 @@ namespace ultramarine {
         /// \returns The value returned by the provided lambda, if any
         template<typename Func>
         inline constexpr auto visit(Func &&func) const noexcept {
-            return std::visit([func = std::forward<Func>(func)](auto const &impl) {
+            return std::visit([func = std::forward<Func>(func)](auto const &impl) mutable {
                 using ret_type = std::result_of_t<Func(decltype(impl))>;
                 if constexpr (seastar::is_future<ret_type>::value) {
-                    return seastar::do_with(std::move(decltype(impl)(impl)), [func](auto const &impl) {
+                    return seastar::do_with(std::move(decltype(impl)(impl)), [func](auto const &impl) mutable {
                         return func(impl);
                     });
                 } else {
@@ -87,8 +87,8 @@ namespace ultramarine {
         template<typename Handler, typename ...Args>
         constexpr auto inline tell(Handler message, Args &&... args) const {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
-                return visit([message, &args](auto const &impl) {
-                    return std::apply([&impl, message](auto &&... args) {
+                return visit([message, &args](auto const &impl) mutable {
+                    return std::apply([&impl, message](auto &&... args) mutable {
                         return impl.tell(message, std::forward<Args>(args) ...);
                     }, std::move(args));
                 });
@@ -154,8 +154,8 @@ namespace ultramarine {
         template<typename Handler, typename ...Args>
         constexpr auto inline tell(Handler message, Args &&... args) const {
             return [this, message, args = std::make_tuple(std::forward<Args>(args) ...)]() mutable {
-                return visit([message, &args](auto const &impl) {
-                    return std::apply([&impl, message](auto &&... args) {
+                return visit([message, &args](auto const &impl) mutable {
+                    return std::apply([&impl, message](auto &&... args) mutable {
                         return impl.tell(message, std::forward<Args>(args) ...);
                     }, std::move(args));
                 });

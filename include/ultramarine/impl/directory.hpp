@@ -65,7 +65,7 @@ namespace ultramarine {
         struct actor_directory {
 
             template<typename KeyType>
-            [[nodiscard]] static constexpr auto hash_key(KeyType const& key) noexcept {
+            [[nodiscard]] static constexpr auto hash_key(KeyType const &key) noexcept {
                 return std::hash<ActorKey<Actor>>{}(key);
             }
 
@@ -85,7 +85,7 @@ namespace ultramarine {
                 } else {
                     return seastar::with_semaphore(activation->semaphore, 1, std::chrono::seconds(1),
                                                    [message, activation, args = std::make_tuple(
-                                                           std::forward<Args>(args) ...)] () mutable {
+                                                           std::forward<Args>(args) ...)]() mutable {
                                                        return std::apply([activation, message](auto &&... args) {
                                                            return (activation->*vtable<Actor>::table[message])(
                                                                    std::forward<Args>(args) ...);

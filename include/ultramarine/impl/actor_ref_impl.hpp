@@ -58,9 +58,9 @@ namespace ultramarine::impl {
 
         template<typename Handler, typename ...Args>
         inline constexpr auto tell(Handler message, Args &&... args) const {
-            return seastar::smp::submit_to(loc, [k = this->key, h = this->hash, message, args = std::make_tuple(
+            return seastar::smp::submit_to(loc, [k = key, h = hash, message, args = std::make_tuple(
                     std::forward<Args>(args) ...)]() mutable {
-                return std::apply([&k, h, message](auto &&... args) {
+                return std::apply([&k, h, message](auto &&... args) mutable {
                     return actor_directory<Actor>::dispatch_message(std::move(k), h, message,
                                                                     std::forward<Args>(args) ...);
                 }, std::move(args));
