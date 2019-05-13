@@ -95,10 +95,10 @@ namespace ultramarine {
             }();
         }
 
-        template<typename Handler, typename ...Args>
-        constexpr auto inline tell_packed(Handler message, std::vector<std::tuple<Args...>> &&args) const {
-            return visit([message, args = std::move(args)](auto const &impl) mutable {
-                return impl.tell_packed(message, std::move(args));
+        template<typename Handler, typename PackedArgs>
+        constexpr auto inline tell_packed(Handler message, PackedArgs &&args) const {
+            return visit([message, args = std::forward<PackedArgs>(args)](auto const &impl) mutable {
+                return impl.tell_packed(message, std::forward<PackedArgs>(args));
             });
         }
     };

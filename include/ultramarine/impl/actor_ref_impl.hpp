@@ -67,10 +67,12 @@ namespace ultramarine::impl {
             });
         }
 
-        template<typename Handler, typename ...Args>
-        constexpr auto inline tell_packed(Handler message, std::vector<std::tuple<Args...>> &&args) const {
-            return seastar::smp::submit_to(loc, [k = key, h = hash, message, args = std::move(args)]() mutable {
-                return actor_directory<Actor>::dispatch_packed_message(std::move(k), h, message, std::move(args));
+        template<typename Handler, typename PackedArgs>
+        constexpr auto inline tell_packed(Handler message, PackedArgs &&args) const {
+            return seastar::smp::submit_to(loc, [k = key, h = hash, message,
+                    args = std::forward<PackedArgs>(args)]() mutable {
+                return actor_directory<Actor>::dispatch_packed_message(std::move(k), h, message,
+                                                                       std::forward<PackedArgs>(args));
             });
         }
     };

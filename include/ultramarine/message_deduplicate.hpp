@@ -29,11 +29,8 @@
 #include "ultramarine/actor_ref.hpp"
 
 namespace ultramarine::impl {
-    template<typename Actor, typename Message, typename Signature>
-    class deduplicator;
-
-    template<typename Actor, typename Message, typename Return, typename... Args>
-    class deduplicator<Actor, Message, Return(Actor::*)(Args...)> {
+    template<typename Actor, typename Message, typename... Args>
+    class deduplicator {
         Message handler;
         std::vector<std::tuple<Args...>> packed;
         actor_ref <Actor> ref;
@@ -51,42 +48,21 @@ namespace ultramarine::impl {
         }
 
         inline auto execute() {
-            return ref.tell_packed(handler, std::move(packed));
-        }
-    };
-
-    template<typename Actor, typename Message, typename Return>
-    class deduplicator<Actor, Message, Return(Actor::*)()> {
-        Message handler;
-        std::size_t counter = 0;
-        actor_ref <Actor> ref;
-
-    public:
-        deduplicator(Message handler, actor_ref <Actor> &ref) : handler(handler), ref(ref) {}
-
-        explicit deduplicator(deduplicator const &) = delete;
-
-        explicit deduplicator(deduplicator &&) = default;
-
-
-        inline void operator()() {
-            ++counter;
-        }
-
-        inline seastar::future<std::vector<Return>> execute() {
-            return seastar::make_ready_future();
+            return ref.tell_packed(handler, std::move(packed)).finally([this] {
+                packed.clear();
+            });
         }
     };
 
     template<typename Actor, typename Message, typename Return, typename... Args>
     static constexpr auto
     deduplicate(actor_ref <Actor> ref, Message handler, Return(Actor::*)(Args...) const) noexcept {
-        return deduplicator<Actor, Message, Return(Actor::*)(Args...)>(handler, ref);
+        return deduplicator<Actor, Message, Args...>(handler, ref);
     }
 
     template<typename Actor, typename Message, typename Return, typename... Args>
     static constexpr auto deduplicate(actor_ref <Actor> ref, Message handler, Return(Actor::*)(Args...)) noexcept {
-        return deduplicator<Actor, Message, Return(Actor::*)(Args...)>(handler, ref);
+        return deduplicator<Actor, Message, Args...>(handler, ref);
     }
 
     template<typename Actor, typename Message, typename Func>
