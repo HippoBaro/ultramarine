@@ -38,6 +38,11 @@ option(ULTRAMARINE_BUILD_APPS "Include apps/ as part of the build" ON)
 option(ULTRAMARINE_BUILD_UNITTESTS "Include tests/ as part of the build" ON)
 option(ULTRAMARINE_BUILD_BENCHMARKS "Include benchmarks/ as part of the build" ON)
 option(ULTRAMARINE_BUILD_DOC "Generate API definitions in docs/" OFF)
+option(ULTRAMARINE_OPTIMIZE_FOR_NATIVE "Build with -march=native" ON)
+
+# Compiler checks
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
 
 # Dependencies
 find_package(Seastar 1.0 REQUIRED)
@@ -61,6 +66,9 @@ add_library(ultramarine-cluster STATIC
 target_include_directories(ultramarine-cluster PRIVATE include)
 target_link_libraries(ultramarine-cluster PUBLIC Seastar::seastar INTERFACE Ultramarine::actor PRIVATE hashring::hashring)
 target_compile_definitions(ultramarine-cluster INTERFACE ULTRAMARINE_REMOTE)
+if(${COMPILER_SUPPORTS_MARCH_NATIVE} AND ${ULTRAMARINE_OPTIMIZE_FOR_NATIVE})
+    target_compile_options(ultramarine-cluster PRIVATE -march=native)
+endif()
 add_library(Ultramarine::cluster ALIAS ultramarine-cluster)
 
 # Apps

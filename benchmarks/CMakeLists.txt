@@ -1,35 +1,29 @@
-add_executable(message_passing message_passing.cpp benchmark_utility.hpp)
-target_link_libraries(message_passing PRIVATE Ultramarine::actor)
+function(add_ultramarine_benchmark)
+    set (options CUSTOM SUITE)
+    set (one_value_args NAME)
+    set (multi_value_args SOURCES ARGS)
+    cmake_parse_arguments (args "${options}" "${one_value_args}" "${multi_value_args}" "${ARGN}")
 
-add_executable(skynet skynet.cpp benchmark_utility.hpp)
-target_link_libraries(skynet PRIVATE Ultramarine::actor)
+    add_executable(${args_NAME} "${args_SOURCES}" benchmark_utility.hpp)
+    target_link_libraries(${args_NAME} PRIVATE Ultramarine::actor)
+    if (${COMPILER_SUPPORTS_MARCH_NATIVE} AND ${ULTRAMARINE_OPTIMIZE_FOR_NATIVE})
+        target_compile_options(${args_NAME} PRIVATE -march=native)
+    endif ()
+    add_dependencies (ultramarine-benchmarks ${args_NAME})
+endfunction()
 
-add_executable(actor_creation actor_creation.cpp benchmark_utility.hpp)
-target_link_libraries(actor_creation PRIVATE Ultramarine::actor)
+# Logical target for all benchmarks.
+add_custom_target (ultramarine-benchmarks)
 
-add_executable(fibonacci fibonacci.cpp benchmark_utility.hpp)
-target_link_libraries(fibonacci PRIVATE Ultramarine::actor)
-
-add_executable(philosophers philosophers.cpp benchmark_utility.hpp)
-target_link_libraries(philosophers PRIVATE Ultramarine::actor)
-
-add_executable(ping_pong ping_pong.cpp benchmark_utility.hpp)
-target_link_libraries(ping_pong PRIVATE Ultramarine::actor)
-
-add_executable(counting counting.cpp benchmark_utility.hpp)
-target_link_libraries(counting PRIVATE Ultramarine::actor)
-
-add_executable(fork-join_throughput fork-join_throughput.cpp benchmark_utility.hpp)
-target_link_libraries(fork-join_throughput PRIVATE Ultramarine::actor)
-
-add_executable(fork-join_create fork-join_create.cpp benchmark_utility.hpp)
-target_link_libraries(fork-join_create PRIVATE Ultramarine::actor)
-
-add_executable(thread_ring thread_ring.cpp benchmark_utility.hpp)
-target_link_libraries(thread_ring PRIVATE Ultramarine::actor)
-
-add_executable(big big.cpp benchmark_utility.hpp)
-target_link_libraries(big PRIVATE Ultramarine::actor)
-
-add_executable(mailbox_performance mailbox_performance.cpp benchmark_utility.hpp)
-target_link_libraries(mailbox_performance PRIVATE Ultramarine::actor)
+add_ultramarine_benchmark(NAME message_passing SOURCES message_passing.cpp)
+add_ultramarine_benchmark(NAME skynet SOURCES skynet.cpp)
+add_ultramarine_benchmark(NAME actor_creation SOURCES actor_creation.cpp)
+add_ultramarine_benchmark(NAME fibonacci SOURCES fibonacci.cpp)
+add_ultramarine_benchmark(NAME philosophers SOURCES philosophers.cpp)
+add_ultramarine_benchmark(NAME ping_pong SOURCES ping_pong.cpp)
+add_ultramarine_benchmark(NAME counting SOURCES counting.cpp)
+add_ultramarine_benchmark(NAME fork-join_throughput SOURCES fork-join_throughput.cpp)
+add_ultramarine_benchmark(NAME fork-join_create SOURCES fork-join_create.cpp)
+add_ultramarine_benchmark(NAME thread_ring SOURCES thread_ring.cpp)
+add_ultramarine_benchmark(NAME big SOURCES big.cpp)
+add_ultramarine_benchmark(NAME mailbox_performance SOURCES mailbox_performance.cpp)
