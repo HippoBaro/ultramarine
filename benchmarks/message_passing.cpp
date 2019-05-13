@@ -24,7 +24,7 @@
 
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
-#include <ultramarine/impl/message_deduplicate.hpp>
+#include <ultramarine/message_deduplicate.hpp>
 #include <ultramarine/utility.hpp>
 #include "benchmark_utility.hpp"
 
@@ -66,6 +66,10 @@ ULTRAMARINE_DEFINE_ACTOR(counter_actor,
                                  (get_counter_future)(get_counter_int)
                                  (accumulate_future)(accumulate_value)(noop));
 };
+
+/*
+ * PLAIN OBJECT
+ */
 
 auto plain_object_void_future() {
     int *counter = new int(0);
@@ -141,6 +145,10 @@ auto plain_object_int_args() {
         return seastar::make_ready_future();
     });
 }
+
+/*
+ * LOCAL ACTOR
+ */
 
 auto local_actor_void_future() {
     int *counter = new int(0);
@@ -229,6 +237,74 @@ auto local_actor_int_args() {
     });
 }
 
+/*
+ * LOCAL ACTOR (DEDUPLICATED)
+ */
+
+auto local_actor_deduplicated_void_future() {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::increase_counter_future(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d();
+        }
+        return seastar::make_ready_future();
+    });
+}
+
+auto local_actor_deduplicated_void() {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::increase_counter_void(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d();
+        }
+        return seastar::make_ready_future();
+    });
+}
+
+auto local_actor_deduplicated_int_future() {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::get_counter_future(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d();
+        }
+        return seastar::make_ready_future();
+    }).discard_result();
+}
+
+auto local_actor_deduplicated_int() {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::get_counter_int(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d();
+        }
+        return seastar::make_ready_future();
+    }).discard_result();
+}
+
+auto local_actor_deduplicated_future_args() {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::accumulate_future(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d(std::vector<int>{10, 12, 30, j});
+        }
+        return seastar::make_ready_future();
+    }).discard_result();
+}
+
+auto local_actor_deduplicated_int_args() {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::accumulate_value(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d(std::vector<int>{10, 12, 30, j});
+        }
+        return seastar::make_ready_future();
+    }).discard_result();
+}
+
+/*
+ * COLLOCATED ACTOR
+ */
+
 auto collocated_actor_void_future() {
     int *counter = new int(0);
 
@@ -315,58 +391,101 @@ auto collocated_actor_int_args() {
     });
 }
 
-auto test() {
-    int *counter = new int(0);
-//
-    auto counterActor = ultramarine::get<counter_actor>(1);
-    return seastar::do_until([counter] {
-        return *counter >= 10000;
-    }, [counterActor, counter] {
-        ++*counter;
-        return counterActor->noop(*counter).discard_result();
-    });
+/*
+ * COLLOCATED ACTOR (DEDUPLICATED)
+ */
 
-//    return seastar::do_for_each(boost::irange(0, 10000), [counterActor] (int i) {
-//        return counterActor->noop(i).discard_result();
-//    });
-}
-
-auto test_packed() {
+auto collocated_actor_deduplicated_void_future() {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::noop(), [] (auto &d) {
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::increase_counter_future(), [] (auto &d) {
         for (int j = 0; j < 10000; ++j) {
-            d(j);
+            d();
         }
         return seastar::make_ready_future();
-    }).then([] (auto &&vec) {
-//        for (const auto &item : vec) {
-//            seastar::print("%d\n", std::get<0>(item));
-//        }
+    });
+}
+
+auto collocated_actor_deduplicated_void() {
+    auto counterActor = ultramarine::get<counter_actor>(1);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::increase_counter_void(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d();
+        }
         return seastar::make_ready_future();
     });
+}
+
+auto collocated_actor_deduplicated_int_future() {
+    auto counterActor = ultramarine::get<counter_actor>(1);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::get_counter_future(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d();
+        }
+        return seastar::make_ready_future();
+    }).discard_result();
+}
+
+auto collocated_actor_deduplicated_int() {
+    auto counterActor = ultramarine::get<counter_actor>(1);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::get_counter_int(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d();
+        }
+        return seastar::make_ready_future();
+    }).discard_result();
+}
+
+auto collocated_actor_deduplicated_future_args() {
+    auto counterActor = ultramarine::get<counter_actor>(1);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::accumulate_future(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d(std::vector<int>{10, 12, 30, j});
+        }
+        return seastar::make_ready_future();
+    }).discard_result();
+}
+
+auto collocated_actor_deduplicated_int_args() {
+    auto counterActor = ultramarine::get<counter_actor>(1);
+    return ultramarine::impl::deduplicate(counterActor, counter_actor::message::accumulate_value(), [] (auto &d) {
+        for (int j = 0; j < 10000; ++j) {
+            d(std::vector<int>{10, 12, 30, j});
+        }
+        return seastar::make_ready_future();
+    }).discard_result();
 }
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
-//            ULTRAMARINE_BENCH(plain_object_void_future),
-//            ULTRAMARINE_BENCH(local_actor_void_future),
-//            ULTRAMARINE_BENCH(collocated_actor_void_future),
-//            ULTRAMARINE_BENCH(plain_object_void),
-//            ULTRAMARINE_BENCH(local_actor_void),
-//            ULTRAMARINE_BENCH(collocated_actor_void),
-//            ULTRAMARINE_BENCH(plain_object_int_future),
-//            ULTRAMARINE_BENCH(local_actor_int_future),
-//            ULTRAMARINE_BENCH(collocated_actor_int_future),
-//            ULTRAMARINE_BENCH(plain_object_int),
-//            ULTRAMARINE_BENCH(local_actor_int),
-//            ULTRAMARINE_BENCH(collocated_actor_int),
-//            ULTRAMARINE_BENCH(plain_object_future_args),
-//            ULTRAMARINE_BENCH(local_actor_future_args),
-//            ULTRAMARINE_BENCH(collocated_actor_future_args),
-//            ULTRAMARINE_BENCH(plain_object_int_args),
-//            ULTRAMARINE_BENCH(local_actor_int_args),
-//            ULTRAMARINE_BENCH(collocated_actor_int_args)
-            ULTRAMARINE_BENCH(test),
-            ULTRAMARINE_BENCH(test_packed)
+            ULTRAMARINE_BENCH(plain_object_void_future),
+            ULTRAMARINE_BENCH(local_actor_void_future),
+            ULTRAMARINE_BENCH(local_actor_deduplicated_void_future),
+            ULTRAMARINE_BENCH(collocated_actor_void_future),
+            ULTRAMARINE_BENCH(collocated_actor_deduplicated_void_future),
+            ULTRAMARINE_BENCH(plain_object_void),
+            ULTRAMARINE_BENCH(local_actor_void),
+            ULTRAMARINE_BENCH(local_actor_deduplicated_void),
+            ULTRAMARINE_BENCH(collocated_actor_void),
+            ULTRAMARINE_BENCH(collocated_actor_deduplicated_void),
+            ULTRAMARINE_BENCH(plain_object_int_future),
+            ULTRAMARINE_BENCH(local_actor_int_future),
+            ULTRAMARINE_BENCH(local_actor_deduplicated_int_future),
+            ULTRAMARINE_BENCH(collocated_actor_int_future),
+            ULTRAMARINE_BENCH(collocated_actor_deduplicated_int_future),
+            ULTRAMARINE_BENCH(plain_object_int),
+            ULTRAMARINE_BENCH(local_actor_int),
+            ULTRAMARINE_BENCH(local_actor_deduplicated_int),
+            ULTRAMARINE_BENCH(collocated_actor_int),
+            ULTRAMARINE_BENCH(collocated_actor_deduplicated_int),
+            ULTRAMARINE_BENCH(plain_object_future_args),
+            ULTRAMARINE_BENCH(local_actor_future_args),
+            ULTRAMARINE_BENCH(local_actor_deduplicated_future_args),
+            ULTRAMARINE_BENCH(collocated_actor_future_args),
+            ULTRAMARINE_BENCH(collocated_actor_deduplicated_future_args),
+            ULTRAMARINE_BENCH(plain_object_int_args),
+            ULTRAMARINE_BENCH(local_actor_int_args),
+            ULTRAMARINE_BENCH(local_actor_deduplicated_int_args),
+            ULTRAMARINE_BENCH(collocated_actor_int_args),
+            ULTRAMARINE_BENCH(collocated_actor_deduplicated_int_args)
     }, 1000);
 }
