@@ -26,6 +26,7 @@
 
 #include <seastar/core/reactor.hh>
 #include <ultramarine/impl/actor_traits.hpp>
+#include "arguments_vector.hpp"
 
 namespace ultramarine {
 
@@ -86,7 +87,7 @@ namespace ultramarine {
                     return seastar::with_semaphore(activation->semaphore, 1, std::chrono::seconds(1),
                                                    [message, activation, args = std::make_tuple(
                                                            std::forward<Args>(args) ...)]() mutable {
-                                                       return std::apply([activation, message](auto &&... args) {
+                                                       return std::apply([activation, message](Args &&... args) {
                                                            return (activation->*vtable<Actor>::table[message])(
                                                                    std::forward<Args>(args) ...);
                                                        }, std::move(args));
@@ -103,13 +104,15 @@ namespace ultramarine {
             template<typename ReturnType, typename KeyType, typename Handler, typename ...Args>
             static constexpr std::enable_if_t<std::is_same_v<ReturnType, void>, seastar::future<>>
             dispatch_packed_message(Actor *act, KeyType &&key, actor_id id, Handler message,
-                                    std::vector<std::tuple<Args...>> &&args) {
+                                    arguments_vector<std::tuple<Args...>> &&args) {
                 using namespace seastar;
+                using ArgTuple = std::tuple<Args...>;
                 using FuncPtr = decltype(&dispatch_message_impl<Handler, Args...>);
 
-                return do_with(act, std::move(args), [id, message](auto *act, auto &targs) mutable {
-                    return parallel_for_each(targs, [act, id, message, &targs](auto &targ) mutable {
-                        return std::apply([act, id, message](auto &&... args) mutable {
+                return do_with(act, std::move(args), [id, message]
+                        (Actor *act, arguments_vector<ArgTuple> &targs) mutable {
+                    return parallel_for_each(targs, [act, id, message, &targs](ArgTuple &targ) {
+                        return std::apply([act, id, message](Args &&... args) mutable {
                             return futurize<ReturnType>::template apply<FuncPtr>(&dispatch_message_impl, act, message,
                                                                                  std::forward<Args>(args)...);
                         }, std::move(targ));
@@ -120,19 +123,21 @@ namespace ultramarine {
             template<typename ReturnType, typename KeyType, typename Handler, typename ...Args>
             static constexpr std::enable_if_t<!std::is_same_v<ReturnType, void>, seastar::future<std::vector<ReturnType>>>
             dispatch_packed_message(Actor *act, KeyType &&key, actor_id id, Handler message,
-                                    std::vector<std::tuple<Args...>> &&args) {
+                                    arguments_vector<std::tuple<Args...>> &&args) {
                 using namespace seastar;
+                using ArgTuple = std::tuple<Args...>;
                 using FuncPtr = decltype(&dispatch_message_impl<Handler, Args...>);
 
                 std::vector<ReturnType> ret;
                 ret.reserve(std::size(args));
                 return do_with(act, std::move(ret), std::move(args), [id, message]
-                        (auto *act, auto &ret, auto &targs) mutable {
-                    return parallel_for_each(targs, [act, id, message, &ret, &targs](auto &targ) mutable {
-                        return std::apply([act, id, message, &ret](auto &&... args) mutable {
+                        (Actor *act, std::vector<ReturnType> &ret, arguments_vector<ArgTuple> &targs) mutable {
+                    return parallel_for_each(targs, [act, id, message, &ret, &targs]
+                            (ArgTuple &targ) mutable {
+                        return std::apply([act, id, message, &ret](Args &&... args) mutable {
                             auto f = futurize<ReturnType>::template apply<FuncPtr>(&dispatch_message_impl, act, message,
                                                                                    std::forward<Args>(args)...);
-                            return f.then_wrapped([&ret](auto &&fut) {
+                            return f.then_wrapped([&ret](seastar::future<ReturnType> &&fut) {
                                 if (fut.failed()) { return make_exception_future(fut.get_exception()); }
                                 ret.emplace_back(std::move(fut.get0()));
                                 return make_ready_future();
@@ -158,13 +163,13 @@ namespace ultramarine {
 
             template<typename KeyType, typename Handler, typename ...Args>
             static constexpr auto dispatch_packed_message(KeyType &&key, actor_id id, Handler message,
-                                                          std::vector<std::tuple<Args...>> &&args) {
+                                                          arguments_vector<std::tuple<Args...>> &&args) {
                 using namespace seastar;
 
                 using FutReturn = futurize_t<std::result_of_t<decltype(vtable<Actor>::table[message])(Actor, Args...)>>;
                 using ReturnType = typename get0_return_type<typename FutReturn::value_type>::type;
 
-                auto *act = hold_activation(std::forward<KeyType>(key), id);
+                Actor *act = hold_activation(std::forward<KeyType>(key), id);
                 return dispatch_packed_message<ReturnType>(act, std::forward<KeyType>(key), id, message,
                                                            std::move(args));
             }

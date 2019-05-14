@@ -24,53 +24,54 @@
 
 #pragma once
 
-#include <vector>
 #include <seastar/core/future.hh>
 #include "ultramarine/actor_ref.hpp"
+#include "ultramarine/impl/arguments_vector.hpp"
 
-namespace ultramarine::impl {
-    template<typename Actor, typename Message, typename... Args>
-    class deduplicator {
-        Message handler;
-        std::vector<std::tuple<Args...>> packed;
-        actor_ref <Actor> ref;
+namespace ultramarine {
 
-    public:
-        deduplicator(Message handler, actor_ref <Actor> &ref) : handler(handler), ref(ref) {}
+    namespace impl {
+        template<typename Actor, typename Message, typename... Args>
+        class deduplicator {
+            Message handler;
+            arguments_vector<std::tuple<Args...>> packed;
+            actor_ref <Actor> ref;
 
-        explicit deduplicator(deduplicator const &) = delete;
+        public:
+            deduplicator(Message handler, actor_ref <Actor> &ref) : handler(handler), ref(ref) {}
 
-        explicit deduplicator(deduplicator &&) = default;
+            explicit deduplicator(deduplicator const &) = delete;
 
-        template<typename ...TArgs>
-        inline void operator()(TArgs &&... args) {
-            packed.emplace_back(std::make_tuple(std::forward<TArgs>(args) ...));
+            explicit deduplicator(deduplicator &&) = default;
+
+            template<typename ...TArgs>
+            inline void operator()(TArgs &&... args) {
+                packed.emplace_back(std::make_tuple(std::forward<TArgs>(args) ...));
+            }
+
+            inline auto execute() {
+                return ref.tell_packed(handler, std::move(packed));
+            }
+        };
+
+        template<typename Actor, typename Message, typename Return, typename... Args>
+        static constexpr auto
+        deduplicate(actor_ref <Actor> ref, Message handler, Return(Actor::*)(Args...) const) noexcept {
+            return deduplicator<Actor, Message, Args...>(handler, ref);
         }
 
-        inline auto execute() {
-            return ref.tell_packed(handler, std::move(packed)).finally([this] {
-                packed.clear();
-            });
+        template<typename Actor, typename Message, typename Return, typename... Args>
+        static constexpr auto deduplicate(actor_ref <Actor> ref, Message handler, Return(Actor::*)(Args...)) noexcept {
+            return deduplicator<Actor, Message, Args...>(handler, ref);
         }
-    };
-
-    template<typename Actor, typename Message, typename Return, typename... Args>
-    static constexpr auto
-    deduplicate(actor_ref <Actor> ref, Message handler, Return(Actor::*)(Args...) const) noexcept {
-        return deduplicator<Actor, Message, Args...>(handler, ref);
-    }
-
-    template<typename Actor, typename Message, typename Return, typename... Args>
-    static constexpr auto deduplicate(actor_ref <Actor> ref, Message handler, Return(Actor::*)(Args...)) noexcept {
-        return deduplicator<Actor, Message, Args...>(handler, ref);
     }
 
     template<typename Actor, typename Message, typename Func>
     constexpr auto deduplicate(actor_ref <Actor> ref, Message handler, Func &&func) noexcept {
-        constexpr auto handlerptr = vtable<Actor>::table[handler];
-        return seastar::do_with(deduplicate<Actor, Message>(ref, handler, handlerptr),
+        constexpr auto handlerptr = impl::vtable<Actor>::table[handler];
+        return seastar::do_with(impl::deduplicate<Actor, Message>(ref, handler, handlerptr),
                                 [func = std::forward<Func>(func)](auto &d) {
-                                    return func(d).then([&d] { return d.execute(); });
+                                    return seastar::futurize<void>::apply(func, d).then([&d] { return d.execute(); });
                                 });
     }
 }
