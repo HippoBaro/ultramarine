@@ -26,10 +26,11 @@
 #include <ultramarine/actor_ref.hpp>
 #include <ultramarine/utility.hpp>
 #include <seastar/core/execution_stage.hh>
+#include <ultramarine/message_deduplicate.hpp>
 #include "benchmark_utility.hpp"
 
 static constexpr std::size_t Iteration = 10000;
-static constexpr std::size_t WorkerCount = 10;
+static constexpr std::size_t WorkerCount = 1000;
 
 class throughput_actor : public ultramarine::actor<throughput_actor> {
 public:
@@ -48,23 +49,12 @@ ULTRAMARINE_DEFINE_ACTOR(throughput_actor, (process)(create));
 
 static int i; // need to be not on stack
 seastar::future<> fork_join_throughput() {
-    std::vector<std::pair<int, ultramarine::actor_ref<throughput_actor>>> actors;
-    for (int j = 0; j < WorkerCount; ++j) {
-        actors.emplace_back(std::make_pair(0, ultramarine::get<throughput_actor>(j)));
-    }
-
-    i = 0;
-    return seastar::do_with(std::move(actors), [](auto &actors) {
-        return seastar::do_for_each(std::begin(actors), std::end(actors), [](auto &pair) {
-            return std::get<1>(pair).visit([&pair](auto const &actor) {
-                return ultramarine::with_buffer(100, [&pair, &actor](auto &buffer) {
-                    return seastar::do_until([&pair] {
-                        return std::get<0>(pair)++ >= Iteration;
-                    }, [&buffer, &actor] {
-                        return buffer(actor.tell(throughput_actor::message::process()));
-                    });
-                });
-            });
+    return seastar::parallel_for_each(boost::irange(0UL, WorkerCount), [](int i) {
+        return ultramarine::deduplicate(ultramarine::get<throughput_actor>(i), throughput_actor::message::process(), []
+                (auto &d) {
+            for (int j = 0; j < Iteration; ++j) {
+                d();
+            }
         });
     });
 }
@@ -72,5 +62,5 @@ seastar::future<> fork_join_throughput() {
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(fork_join_throughput),
-    }, 100);
+    }, 10);
 }

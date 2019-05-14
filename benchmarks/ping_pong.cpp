@@ -27,7 +27,7 @@
 #include <ultramarine/utility.hpp>
 #include "benchmark_utility.hpp"
 
-static constexpr std::size_t PingPongCount = 1000000;
+static constexpr std::size_t PingPongCount = 10000000;
 
 class ping_actor : public ultramarine::actor<ping_actor> {
 public:
@@ -46,11 +46,10 @@ ULTRAMARINE_DEFINE_ACTOR(pong_actor, (pong));
 
 seastar::future<> ping_actor::ping_pong(int pong_addr) {
     pingpong_count = 0;
-    return ultramarine::get<pong_actor>(pong_addr).visit([this](auto const &pong) {
-        return seastar::do_until([this] { return pingpong_count >= PingPongCount; }, [this, &pong] {
-            return pong.tell(pong_actor::message::pong()).then([this] {
-                ++pingpong_count;
-            });
+    auto pong = ultramarine::get<pong_actor>(pong_addr);
+    return seastar::do_until([this] { return pingpong_count >= PingPongCount; }, [this, pong] {
+        return pong->pong().then([this] {
+            ++pingpong_count;
         });
     });
 }
@@ -58,7 +57,7 @@ seastar::future<> ping_actor::ping_pong(int pong_addr) {
 void pong_actor::pong() const {}
 
 seastar::future<> pingpong_collocated() {
-    return ultramarine::get<ping_actor>(0).tell(ping_actor::message::ping_pong(), 1);
+    return ultramarine::get<ping_actor>(0)->ping_pong(1);
 }
 
 int main(int ac, char **av) {

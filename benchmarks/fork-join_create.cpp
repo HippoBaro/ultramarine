@@ -48,7 +48,7 @@ seastar::future<> fork_join_create_buffered() {
     return create_actor::clear_directory().then([] {
         return ultramarine::with_buffer(100, [] (auto &buffer) {
             return seastar::do_until([] { return i >= CreationCount; }, [&buffer] {
-                return buffer(ultramarine::get<create_actor>(i++).tell(create_actor::message::process()));
+                return buffer(ultramarine::get<create_actor>(i++)->process());
             });
         });
     });

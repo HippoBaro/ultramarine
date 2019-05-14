@@ -59,17 +59,15 @@ ULTRAMARINE_DEFINE_ACTOR(philosopher_actor, (start));
     int round = 0;
 
     seastar::future<> start() {
-        return ultramarine::get<arbitrator_actor>(0).visit([this](auto const &arbitrator) {
-            return seastar::do_until([this] { return round >= RoundLen; }, [this, &arbitrator] {
-                return arbitrator.tell(arbitrator_actor::message::hungry(), this->key).then(
-                        [this, &arbitrator](bool allowed) {
-                            if (allowed) {
-                                ++round;
-                                return arbitrator.tell(arbitrator_actor::message::done(), this->key);
-                            }
-                            ++failed_attempts;
-                            return seastar::make_ready_future();
-                        });
+        auto arbitrator = ultramarine::get<arbitrator_actor>(0);
+        return seastar::do_until([this] { return round >= RoundLen; }, [this, arbitrator] {
+            return arbitrator->hungry(this->key).then([this, arbitrator](bool allowed) {
+                if (allowed) {
+                    ++round;
+                    return arbitrator.tell(arbitrator_actor::message::done(), key);
+                }
+                ++failed_attempts;
+                return seastar::make_ready_future();
             });
         });
     }
@@ -79,11 +77,9 @@ seastar::future<> dinning_philosophers() {
     failed_attempts = 0;
     return philosopher_actor::clear_directory().then([] {
         return arbitrator_actor::clear_directory().then([] {
-            std::vector<seastar::future<>> futs;
-            for (int j = 0; j < PhilosopherLen; ++j) {
-                futs.emplace_back(ultramarine::get<philosopher_actor>(j).tell(philosopher_actor::message::start()));
-            }
-            return seastar::when_all(std::begin(futs), std::end(futs)).then([](auto const &) {
+            return seastar::parallel_for_each(boost::irange(0UL, PhilosopherLen), [](int philo) {
+                return ultramarine::get<philosopher_actor>(philo)->start();
+            }).then([] {
                 seastar::print("performed a total of %d failed attempt\n", failed_attempts.load());
             });
         });

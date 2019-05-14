@@ -25,7 +25,7 @@
 #include <ultramarine/actor.hpp>
 #include <ultramarine/actor_ref.hpp>
 #include <ultramarine/utility.hpp>
-#include <seastar/core/execution_stage.hh>
+#include <ultramarine/message_deduplicate.hpp>
 #include "benchmark_utility.hpp"
 
 static constexpr std::size_t ProduceCount = 20000000;
@@ -35,52 +35,45 @@ public:
 ULTRAMARINE_DEFINE_ACTOR(counting_actor, (count)(increment));
     std::size_t discovered = 0;
 
-    std::size_t count() const;
+    std::size_t count() const {
+        return discovered;
+    }
 
-    void increment();
+    void increment() {
+        ++discovered;
+    }
 };
 
 class producer_actor : public ultramarine::actor<producer_actor> {
 public:
 ULTRAMARINE_DEFINE_ACTOR(producer_actor, (produce));
-    std::size_t produced = 0;
+    std::size_t produced;
 
-    seastar::future<> produce(int counter_addr);
-};
+    seastar::future<> produce(int counter_addr) {
+        auto counter = ultramarine::get<counting_actor>(counter_addr);
 
-seastar::future<> producer_actor::produce(int counter_addr) {
-    produced = 0;
-
-    return ultramarine::get<counting_actor>(counter_addr).visit([this](auto const &counter) {
-        return ultramarine::with_buffer(100, [this, &counter] (auto &buffer) {
-            return seastar::do_until([this] { return produced >= ProduceCount; }, [this, &counter, &buffer] {
-                ++produced;
-                return buffer(counter.tell(counting_actor::message::increment()));
-            });
-        }).then([this, &counter] {
-            return counter.tell(counting_actor::message::count()).then([this](std::size_t discovered) {
+        return ultramarine::deduplicate(counter, counting_actor::message::increment(), [this] (auto &increment) {
+            for (produced = 0; produced < ProduceCount; ++produced) {
+                increment();
+            }
+        }).then([this, counter] {
+            return counter->count().then([this](std::size_t discovered) {
                 assert(produced == discovered);
             });
         });
-    });
-}
-
-void counting_actor::increment() {
-    ++discovered;
-}
-
-std::size_t counting_actor::count() const {
-    return discovered;
-}
+    }
+};
 
 seastar::future<> count_collocated() {
     return producer_actor::clear_directory().then([] {
-        return ultramarine::get<producer_actor>(0).tell(producer_actor::message::produce(), 1);
+        return counting_actor::clear_directory().then([] {
+            return ultramarine::get<producer_actor>(0)->produce(1);
+        });
     });
 }
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(count_collocated),
-    }, 10);
+    }, 100);
 }

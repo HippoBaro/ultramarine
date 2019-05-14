@@ -63,7 +63,7 @@ ULTRAMARINE_DEFINE_ACTOR(big_actor, (ping)(pong));
             return seastar::do_until([this] { return pingpong_count >= PingPongCount; }, [this, &buffer] {
                 ++pingpong_count;
                 auto next = pseudo_random::nextInt(ActorCount);
-                return buffer(ultramarine::get<big_actor>(next).tell(big_actor::message::pong()));
+                return buffer(ultramarine::get<big_actor>(next)->pong());
             });
         });
     };
@@ -77,7 +77,7 @@ seastar::future<> big() {
     return big_actor::clear_directory().then([] {
         return ultramarine::with_buffer(100, [] (auto &buffer) {
             return seastar::do_until([] { return i >= ActorCount; }, [&buffer] {
-                return buffer(ultramarine::get<big_actor>(i++).tell(big_actor::message::ping()));
+                return buffer(ultramarine::get<big_actor>(i++)->ping());
             });
         });
     });

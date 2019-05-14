@@ -46,7 +46,7 @@ ULTRAMARINE_DEFINE_ACTOR(thread_ring_actor, (ping));
 
     seastar::future<> ping(int remaining) {
         if (remaining > 0) {
-            return ultramarine::get<thread_ring_actor>(next).tell(thread_ring_actor::message::ping(), remaining - 1);
+            return ultramarine::get<thread_ring_actor>(next)->ping(remaining - 1);
         }
         return seastar::make_ready_future();
     }
@@ -54,7 +54,7 @@ ULTRAMARINE_DEFINE_ACTOR(thread_ring_actor, (ping));
 
 seastar::future<> thread_ring() {
     return thread_ring_actor::clear_directory().then([] {
-        return ultramarine::get<thread_ring_actor>(0).tell(thread_ring_actor::message::ping(), MessageCount);
+        return ultramarine::get<thread_ring_actor>(0)->ping(MessageCount);
     });
 }
 

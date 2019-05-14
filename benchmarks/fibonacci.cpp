@@ -40,8 +40,8 @@ ULTRAMARINE_DEFINE_ACTOR(fibonacci_actor, (fib));
         } else if (result > 0) {
             return seastar::make_ready_future<int>(result);
         } else {
-            auto f1 = ultramarine::get<fibonacci_actor>(key - 1).tell(fibonacci_actor::message::fib());
-            auto f2 = ultramarine::get<fibonacci_actor>(key - 2).tell(fibonacci_actor::message::fib());
+            auto f1 = ultramarine::get<fibonacci_actor>(key - 1)->fib();
+            auto f2 = ultramarine::get<fibonacci_actor>(key - 2)->fib();
             return seastar::when_all_succeed(std::move(f1), std::move(f2)).then([this] (auto r1, auto r2) {
                 return result = r1 + r2;
             });
@@ -51,7 +51,7 @@ ULTRAMARINE_DEFINE_ACTOR(fibonacci_actor, (fib));
 
 auto fib() {
     return fibonacci_actor::clear_directory().then([] {
-        return ultramarine::get<fibonacci_actor>(36).tell(fibonacci_actor::message::fib()).discard_result();
+        return ultramarine::get<fibonacci_actor>(36)->fib().discard_result();
     });
 }
 

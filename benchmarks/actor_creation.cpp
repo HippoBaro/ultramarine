@@ -45,19 +45,16 @@ ULTRAMARINE_DEFINE_ACTOR(skynet_local_actor, (noop));
 
 template<typename Type>
 auto create_actors() {
-    constexpr auto create = 1000;
-    std::vector<seastar::future<>> futs{};
-    futs.reserve(create);
+    constexpr auto create = 10000;
 
-    for (int j = 0; j < create; ++j) {
-        futs.emplace_back(ultramarine::get<Type>(j).tell(Type::message::noop()));
-    }
-    return seastar::when_all(std::begin(futs), std::end(futs)).discard_result();
+    return seastar::parallel_for_each(boost::irange(0, create), [] (int j) {
+        return ultramarine::get<Type>(j)->noop();
+    });
 }
 
 int main(int ac, char **av) {
     return ultramarine::benchmark::run(ac, av, {
             ULTRAMARINE_BENCH(create_actors<skynet_singleton_actor>),
             ULTRAMARINE_BENCH(create_actors<skynet_local_actor>)
-    }, 100000);
+    }, 100);
 }

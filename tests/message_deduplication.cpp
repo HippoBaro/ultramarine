@@ -52,9 +52,14 @@ class counter_actor : public ultramarine::actor<counter_actor> {
 ULTRAMARINE_DEFINE_ACTOR(counter_actor,
                          (fut_noop_nocopy)(fut_exception_nocopy)(noop_nocopy)(exception_nocopy)(void_noop_nocopy)(
                                  void_exception_nocopy)(fut_noop_void)(fut_exception_void)(noop_void)(exception_void)(
-                                 void_noop_void)(void_exception_void));
+                                 void_noop_void)(void_exception_void)(increment)(get_count));
 
 public:
+
+    std::size_t count = 0;
+
+    void increment() { ++count; }
+    std::size_t get_count() const { return count; }
 
     seastar::future<no_copy_message> fut_noop_nocopy(no_copy_message const &) const {
         return seastar::make_ready_future<no_copy_message>();
@@ -112,9 +117,22 @@ using namespace seastar;
  * Local
  */
 
+SEASTAR_THREAD_TEST_CASE (ensure_local_message_packing_instanciation_count) {
+    auto counterActor = ultramarine::get<counter_actor>(0);
+    ultramarine::deduplicate(counterActor, counter_actor::message::increment(), [](auto &d) {
+        for (int j = 0; j < 1000; ++j) {
+            d();
+        }
+    }).then([counterActor] {
+        return counterActor->get_count().then([] (std::size_t count) {
+            BOOST_CHECK(count == 1000);
+        });
+    }).wait();
+}
+
 SEASTAR_THREAD_TEST_CASE (ensure_local_fut_nocopy_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::fut_noop_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::fut_noop_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -126,7 +144,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_fut_nocopy_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_fut_exception_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::fut_exception_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::fut_exception_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -140,7 +158,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_fut_exception_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_nocopy_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::noop_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::noop_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -152,7 +170,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_nocopy_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_exception_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::exception_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::exception_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -166,7 +184,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_exception_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_void_nocopy_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::void_noop_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::void_noop_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).wait();
@@ -174,7 +192,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_void_nocopy_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_void_exception_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::void_exception_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::void_exception_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).then([]() {
@@ -188,7 +206,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_void_exception_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_fut_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::fut_noop_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::fut_noop_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -200,7 +218,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_fut_void_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_fut_exception_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::fut_exception_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::fut_exception_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -214,7 +232,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_fut_exception_void_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::noop_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::noop_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -226,7 +244,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_void_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_exception_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::exception_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::exception_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -240,7 +258,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_exception_void_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_void_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::void_noop_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::void_noop_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).wait();
@@ -248,7 +266,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_void_void_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_local_void_exception_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(0);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::void_exception_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::void_exception_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([]() {
@@ -266,7 +284,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_void_exception_void_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_fut_nocopy_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::fut_noop_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::fut_noop_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -278,7 +296,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_fut_nocopy_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_fut_exception_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::fut_exception_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::fut_exception_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -292,7 +310,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_fut_exception_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_nocopy_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::noop_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::noop_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -304,7 +322,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_nocopy_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_exception_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::exception_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::exception_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -318,7 +336,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_exception_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_nocopy_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::void_noop_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::void_noop_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).wait();
@@ -326,7 +344,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_nocopy_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_exception_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::void_exception_nocopy(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::void_exception_nocopy(), [](auto &d) {
         d(no_copy_message());
         return seastar::make_ready_future();
     }).then([]() {
@@ -340,7 +358,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_exception_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_fut_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::fut_noop_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::fut_noop_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -352,7 +370,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_fut_void_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_fut_exception_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::fut_exception_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::fut_exception_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -366,7 +384,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_fut_exception_void_message_packing) 
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::noop_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::noop_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -378,7 +396,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_exception_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::exception_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::exception_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([](auto &&vec) {
@@ -392,7 +410,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_exception_void_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::void_noop_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::void_noop_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).wait();
@@ -400,7 +418,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_void_message_packing) {
 
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_exception_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
-    ultramarine::impl::deduplicate(counterActor, counter_actor::message::void_exception_void(), [](auto &d) {
+    ultramarine::deduplicate(counterActor, counter_actor::message::void_exception_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([]() {

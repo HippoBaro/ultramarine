@@ -41,11 +41,9 @@ ULTRAMARINE_DEFINE_ACTOR(skynet_singleton_actor, (skynet));
 
         for (int i = 0; i < div; ++i) {
             auto sub_num = num + i * (size / div);
-            tasks.emplace_back(
-                    ultramarine::get<skynet_singleton_actor>(sub_num).tell(skynet_singleton_actor::message::skynet(),
-                                                                           (unsigned long) sub_num,
-                                                                           (unsigned long) size / div,
-                                                                           (unsigned int) div));
+            tasks.emplace_back(ultramarine::get<skynet_singleton_actor>(sub_num)->skynet((unsigned long) sub_num,
+                                                                                         (unsigned long) size / div,
+                                                                                         (unsigned int) div));
         }
 
         return seastar::do_with(std::move(tasks), [](auto &tasks) {
@@ -74,10 +72,9 @@ ULTRAMARINE_DEFINE_ACTOR(skynet_local_actor, (skynet));
 
         for (int i = 0; i < div; ++i) {
             auto sub_num = num + i * (size / div);
-            tasks.emplace_back(ultramarine::get<skynet_local_actor>(0).tell(skynet_local_actor::message::skynet(),
-                                                                            (unsigned long) sub_num,
-                                                                            (unsigned long) size / div,
-                                                                            (unsigned int) div));
+            tasks.emplace_back(ultramarine::get<skynet_local_actor>(0)->skynet((unsigned long) sub_num,
+                                                                               (unsigned long) size / div,
+                                                                               (unsigned int) div));
         }
 
         return seastar::do_with(std::move(tasks), [](auto &tasks) {
@@ -121,15 +118,13 @@ auto skynet_futures() {
 
 auto skynet_s_actor() {
     return skynet_singleton_actor::clear_directory().then([] {
-        return ultramarine::get<skynet_singleton_actor>(0).tell(skynet_singleton_actor::message::skynet(), 0, max,
-                                                                breath).discard_result();
+        return ultramarine::get<skynet_singleton_actor>(0)->skynet(0, max, breath).discard_result();
     });
 }
 
 auto skynet_l_actor() {
     return skynet_local_actor::clear_directory().then([] {
-        return ultramarine::get<skynet_local_actor>(0).tell(skynet_local_actor::message::skynet(), 0, max,
-                                                            breath).discard_result();
+        return ultramarine::get<skynet_local_actor>(0)->skynet(0, max, breath).discard_result();
     });
 }
 
