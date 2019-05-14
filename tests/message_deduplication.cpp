@@ -59,6 +59,72 @@ public:
     std::size_t count = 0;
 
     void increment() { ++count; }
+
+    std::size_t get_count() const { return count; }
+
+    seastar::future<no_copy_message> fut_noop_nocopy(no_copy_message const &) const {
+        return seastar::make_ready_future<no_copy_message>();
+    }
+
+    seastar::future<no_copy_message> fut_exception_nocopy(no_copy_message const &) const {
+        throw std::runtime_error("error");
+    }
+
+    no_copy_message noop_nocopy(no_copy_message const &) const {
+        return no_copy_message();
+    }
+
+    no_copy_message exception_nocopy(no_copy_message const &) const {
+        throw std::runtime_error("error");
+    }
+
+    void void_noop_nocopy(no_copy_message const &) const {
+        return;
+    }
+
+    void void_exception_nocopy(no_copy_message const &) const {
+        throw std::runtime_error("error");
+    }
+
+    seastar::future<no_copy_message> fut_noop_void() const {
+        return seastar::make_ready_future<no_copy_message>();
+    }
+
+    seastar::future<no_copy_message> fut_exception_void() const {
+        throw std::runtime_error("error");
+    }
+
+    no_copy_message noop_void() const {
+        return no_copy_message();
+    }
+
+    no_copy_message exception_void() const {
+        throw std::runtime_error("error");
+    }
+
+    void void_noop_void() const {
+        return;
+    }
+
+    void void_exception_void() const {
+        throw std::runtime_error("error");
+    }
+
+};
+
+class local_counter_actor : public ultramarine::actor<local_counter_actor>,
+                            public ultramarine::local_actor<local_counter_actor> {
+ULTRAMARINE_DEFINE_ACTOR(local_counter_actor,
+                         (fut_noop_nocopy)(fut_exception_nocopy)(noop_nocopy)(exception_nocopy)(void_noop_nocopy)(
+                                 void_exception_nocopy)(fut_noop_void)(fut_exception_void)(noop_void)(exception_void)(
+                                 void_noop_void)(void_exception_void)(increment)(get_count));
+
+public:
+
+    std::size_t count = 0;
+
+    void increment() { ++count; }
+
     std::size_t get_count() const { return count; }
 
     seastar::future<no_copy_message> fut_noop_nocopy(no_copy_message const &) const {
@@ -124,7 +190,7 @@ SEASTAR_THREAD_TEST_CASE (ensure_local_message_packing_instanciation_count) {
             d();
         }
     }).then([counterActor] {
-        return counterActor->get_count().then([] (std::size_t count) {
+        return counterActor->get_count().then([](std::size_t count) {
             BOOST_CHECK(count == 1000);
         });
     }).wait();
@@ -419,6 +485,157 @@ SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_void_message_packing) {
 SEASTAR_THREAD_TEST_CASE (ensure_collocated_void_exception_void_message_packing) {
     auto counterActor = ultramarine::get<counter_actor>(1);
     ultramarine::deduplicate(counterActor, counter_actor::message::void_exception_void(), [](auto &d) {
+        d();
+        return seastar::make_ready_future();
+    }).then([]() {
+        BOOST_FAIL("received response, expected exception");
+        return seastar::make_ready_future();
+    }).handle_exception_type([](std::runtime_error const &ex) {
+        BOOST_CHECK(std::strcmp(ex.what(), "error") == 0);
+    }).wait();
+}
+
+/*
+ * Worker actor
+ */
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_fut_nocopy_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::fut_noop_nocopy(), [](auto &d) {
+        d(no_copy_message());
+        return seastar::make_ready_future();
+    }).then([](auto &&vec) {
+        static_assert(std::is_same_v<typename std::decay_t<decltype(vec)>::value_type, no_copy_message>);
+        BOOST_CHECK(std::size(vec) == 1);
+        return seastar::make_ready_future();
+    }).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_fut_exception_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::fut_exception_nocopy(), [](auto &d) {
+        d(no_copy_message());
+        return seastar::make_ready_future();
+    }).then([](auto &&vec) {
+        static_assert(std::is_same_v<typename std::decay_t<decltype(vec)>::value_type, no_copy_message>);
+        BOOST_FAIL("received response, expected exception");
+        return seastar::make_ready_future();
+    }).handle_exception_type([](std::runtime_error const &ex) {
+        BOOST_CHECK(std::strcmp(ex.what(), "error") == 0);
+    }).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_nocopy_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::noop_nocopy(), [](auto &d) {
+        d(no_copy_message());
+        return seastar::make_ready_future();
+    }).then([](auto &&vec) {
+        static_assert(std::is_same_v<typename std::decay_t<decltype(vec)>::value_type, no_copy_message>);
+        BOOST_CHECK(std::size(vec) == 1);
+        return seastar::make_ready_future();
+    }).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_exception_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::exception_nocopy(), [](auto &d) {
+        d(no_copy_message());
+        return seastar::make_ready_future();
+    }).then([](auto &&vec) {
+        static_assert(std::is_same_v<typename std::decay_t<decltype(vec)>::value_type, no_copy_message>);
+        BOOST_FAIL("received response, expected exception");
+        return seastar::make_ready_future();
+    }).handle_exception_type([](std::runtime_error const &ex) {
+        BOOST_CHECK(std::strcmp(ex.what(), "error") == 0);
+    }).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_void_nocopy_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::void_noop_nocopy(), [](auto &d) {
+        d(no_copy_message());
+        return seastar::make_ready_future();
+    }).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_void_exception_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::void_exception_nocopy(), [](auto &d) {
+        d(no_copy_message());
+        return seastar::make_ready_future();
+    }).then([]() {
+        BOOST_FAIL("received response, expected exception");
+        return seastar::make_ready_future();
+    }).handle_exception_type([](std::runtime_error const &ex) {
+        BOOST_CHECK(std::strcmp(ex.what(), "error") == 0);
+    }).wait();
+}
+
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_fut_void_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::fut_noop_void(), [](auto &d) {
+        d();
+        return seastar::make_ready_future();
+    }).then([](auto &&vec) {
+        static_assert(std::is_same_v<typename std::decay_t<decltype(vec)>::value_type, no_copy_message>);
+        BOOST_CHECK(std::size(vec) == 1);
+        return seastar::make_ready_future();
+    }).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_fut_exception_void_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::fut_exception_void(), [](auto &d) {
+        d();
+        return seastar::make_ready_future();
+    }).then([](auto &&vec) {
+        static_assert(std::is_same_v<typename std::decay_t<decltype(vec)>::value_type, no_copy_message>);
+        BOOST_FAIL("received response, expected exception");
+        return seastar::make_ready_future();
+    }).handle_exception_type([](std::runtime_error const &ex) {
+        BOOST_CHECK(std::strcmp(ex.what(), "error") == 0);
+    }).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_void_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::noop_void(), [](auto &d) {
+        d();
+        return seastar::make_ready_future();
+    }).then([](auto &&vec) {
+        static_assert(std::is_same_v<typename std::decay_t<decltype(vec)>::value_type, no_copy_message>);
+        BOOST_CHECK(std::size(vec) == 1);
+        return seastar::make_ready_future();
+    }).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_exception_void_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::exception_void(), [](auto &d) {
+        d();
+        return seastar::make_ready_future();
+    }).then([](auto &&vec) {
+        static_assert(std::is_same_v<typename std::decay_t<decltype(vec)>::value_type, no_copy_message>);
+        BOOST_FAIL("received response, expected exception");
+        return seastar::make_ready_future();
+    }).handle_exception_type([](std::runtime_error const &ex) {
+        BOOST_CHECK(std::strcmp(ex.what(), "error") == 0);
+    }).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_void_void_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::void_noop_void(), [](auto &d) {
+        d();
+        return seastar::make_ready_future();
+    }).wait();
+}
+
+SEASTAR_THREAD_TEST_CASE (ensure_worker_void_exception_void_message_packing) {
+    auto counterActor = ultramarine::get<local_counter_actor>(0);
+    ultramarine::deduplicate(counterActor, local_counter_actor::message::void_exception_void(), [](auto &d) {
         d();
         return seastar::make_ready_future();
     }).then([]() {

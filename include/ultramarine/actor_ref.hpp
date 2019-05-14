@@ -169,6 +169,13 @@ namespace ultramarine {
                 });
             }();
         }
+
+        template<typename Handler, typename PackedArgs>
+        constexpr auto inline tell_packed(Handler message, PackedArgs &&args) const {
+            return visit([message, args = std::forward<PackedArgs>(args)](auto const &impl) mutable {
+                return impl.tell_packed(message, std::forward<PackedArgs>(args));
+            });
+        }
     };
 
     /// A movable and copyable type-erased reference to a virtual actor.
