@@ -56,6 +56,8 @@ namespace ultramarine {
 
         constexpr actor_ref(actor_ref &&) noexcept = default;
 
+    private:
+
         /// Obtain the concrete [ultramarine::actor_ref]() implementation
         /// \param func A lambda to execute with the [ultramarine::actor_ref]() implementation
         /// \returns The value returned by the provided lambda, if any
@@ -72,6 +74,8 @@ namespace ultramarine {
                 }
             }, impl);
         }
+
+    public:
 
         /// Provides an intuitive function call-like API.
         /// The syntax `ref->msg(args...)` is equivalent to `ref.tell(actor::message::msg, args...)` but shorter.
@@ -120,6 +124,8 @@ namespace ultramarine {
 
         constexpr actor_ref(actor_ref &&) noexcept = default;
 
+    private:
+
         /// Obtain the concrete [ultramarine::actor_ref]() implementation
         /// \param func A lambda to execute with the [ultramarine::actor_ref]() implementation
         /// \returns The value returned by the provided lambda, if any
@@ -138,6 +144,8 @@ namespace ultramarine {
                 return func(impl);
             });
         }
+
+    public:
 
         /// Provides an intuitive function call-like API.
         /// The syntax `ref->msg(args...)` is equivalent to `ref.tell(actor::message::msg, args...)` but shorter.
