@@ -47,6 +47,7 @@ namespace ultramarine::cluster::impl {
     static constexpr void __attribute__ ((used))
     register_remote_endpoint(Ret (Class::*fptr)(Args...), Handler message) {
         auto reg = [fptr, message](auto *rpc) {
+            if (!Class::directory) { Class::directory = std::make_unique<ultramarine::impl::directory<Class>>(); }
             rpc->register_handler(message.value, [message](ActorKey key, Args... args) {
                 return ultramarine::get<Actor>(std::forward<ActorKey>(key)).tell(message, std::forward<Args>(args)...);
             });
@@ -58,6 +59,7 @@ namespace ultramarine::cluster::impl {
     static constexpr void __attribute__ ((used))
     register_remote_endpoint(Ret (Class::*fptr)(Args...) const, Handler message) {
         auto reg = [fptr, message](auto *rpc) {
+            if (!Class::directory) { Class::directory = std::make_unique<ultramarine::impl::directory<Class>>(); }
             rpc->register_handler(message.value, [message](ActorKey key, Args... args) {
                 return ultramarine::get<Actor>(std::forward<ActorKey>(key)).tell(message, std::forward<Args>(args)...);
             });

@@ -50,7 +50,7 @@ namespace ultramarine {
         using PlacementStrategy = LocalPlacementStrategy;
 
         /// \exclude
-        static inline thread_local std::unique_ptr<impl::directory<Derived>> directory;
+        static inline thread_local std::unique_ptr<impl::directory<Derived>> directory = std::make_unique<impl::directory<Derived>>();
 
         /// \effects Clears all actors of type Derived in all shards
         /// \returns A future available when all instances of this actor type have been purged
