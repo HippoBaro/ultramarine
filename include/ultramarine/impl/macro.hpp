@@ -87,7 +87,7 @@ static constexpr auto make_vtable() {                                           
 private:                                                                                                    \
       KeyType key;                                                                                          \
 public:                                                                                                     \
-      explicit name(KeyType &&key) noexcept : key(std::forward<KeyType>(key)) { }                           \
+      explicit name(KeyType &&key) noexcept : key(std::move(key)) { }                                       \
       struct internal {                                                                                     \
           template<typename Ref>                                                                            \
           struct interface {                                                                                \
