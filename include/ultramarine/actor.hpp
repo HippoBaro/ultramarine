@@ -56,9 +56,7 @@ namespace ultramarine {
         /// \returns A future available when all instances of this actor type have been purged
         static seastar::future<> clear_directory() {
             return seastar::smp::invoke_on_all([] {
-                if (directory) {
-                    directory->clear();
-                }
+                directory->clear();
                 return seastar::make_ready_future();
             });
         }

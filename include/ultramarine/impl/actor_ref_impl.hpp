@@ -100,7 +100,7 @@ namespace ultramarine::impl {
     }
 
     template<typename Actor, typename KeyType, typename Func>
-    [[nodiscard]] constexpr auto
+    [[nodiscard]] inline constexpr auto
     do_with_actor_ref_impl(KeyType const &key, seastar::shard_id shard, Func &&func) noexcept {
         auto hash = actor_directory<Actor>::hash_key(shard);
         return func(collocated_actor_ref<Actor>(key, hash, shard));

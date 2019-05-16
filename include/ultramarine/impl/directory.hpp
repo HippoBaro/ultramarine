@@ -66,15 +66,11 @@ namespace ultramarine {
         struct actor_directory {
 
             template<typename KeyType>
-            [[nodiscard]] static constexpr auto hash_key(KeyType const &key) noexcept {
+            [[nodiscard]] static inline constexpr auto hash_key(KeyType const &key) noexcept {
                 return std::hash<ActorKey<Actor>>{}(key);
             }
 
-            [[nodiscard]] static constexpr Actor *hold_activation(ActorKey<Actor> &&key, actor_id id) {
-                if (!Actor::directory) {
-                    Actor::directory = std::make_unique<ultramarine::impl::directory<Actor>>();
-                }
-
+            [[nodiscard]] static inline constexpr Actor *hold_activation(ActorKey<Actor> &&key, actor_id id) {
                 auto r = std::get<0>(Actor::directory->try_emplace(id, std::forward<ActorKey<Actor>>(key)));
                 return &(std::get<1>(*r));
             }
