@@ -19,6 +19,16 @@ endfunction()
 # Logical target for all benchmarks.
 add_custom_target (ultramarine-benchmarks)
 
+add_custom_command(
+        TARGET ultramarine-benchmarks POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_cluster_bench.py
+        ${CMAKE_CURRENT_BINARY_DIR}/run_cluster_bench.py)
+
+add_custom_command(
+        TARGET ultramarine-benchmarks POST_BUILD
+        COMMAND chmod 751 ${CMAKE_CURRENT_BINARY_DIR}/run_cluster_bench.py)
+
 add_ultramarine_benchmark(NAME message_passing SOURCES message_passing.cpp CLUSTERED)
 add_ultramarine_benchmark(NAME skynet SOURCES skynet.cpp CLUSTERED)
 add_ultramarine_benchmark(NAME actor_creation SOURCES actor_creation.cpp CLUSTERED)
