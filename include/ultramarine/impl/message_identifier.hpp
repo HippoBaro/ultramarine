@@ -88,15 +88,10 @@ namespace ultramarine::impl {
     static constexpr uint32_t crc32(const char *data, uint32_t len, uint32_t crc = 0) {
         crc = crc ^ 0xFFFFFFFFU;
         for (uint32_t i = 0; i < len; i++) {
-            crc = table[*data ^ (crc & 0xFF)] ^ (crc >> 8);
+            crc = table[(uint8_t)*data ^ (crc & 0xFFU)] ^ (crc >> 8U);
             data++;
         }
-        return crc ^ 0xFFFFFFFFU;
+        crc ^= 0xFFFFFFFFU;
+        return crc &= ~(1U << 0U); // clearing the least-significant bit
     }
-
-//    template <typename Handler>
-//    static constexpr uint32_t remote_endpoint_id(Handler message) {
-//        boost::hana::make_string
-//        auto message_name = boost::hana::to<char const*>(message);
-//        return crc32(boost::hana::to<char const*>(message), std::strlen(message_name));
 }

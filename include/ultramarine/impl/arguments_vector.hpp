@@ -26,6 +26,7 @@
 
 #include <vector>
 #include <boost/range.hpp>
+#include <ultramarine/cluster/impl/message_serializer.hpp>
 
 namespace ultramarine::impl {
     template<typename T>
@@ -33,12 +34,25 @@ namespace ultramarine::impl {
 
     // And argument vector is a standard vector
     template<typename ...Args>
-    struct arguments_vector<std::tuple<Args...>> : private std::vector<std::tuple<Args...>> {
+    struct arguments_vector<std::tuple<Args...>> : public std::vector<std::tuple<Args...>> {
         using std::vector<std::tuple<Args...>>::vector;
         using std::vector<std::tuple<Args...>>::emplace_back;
         using std::vector<std::tuple<Args...>>::begin;
         using std::vector<std::tuple<Args...>>::end;
         using std::vector<std::tuple<Args...>>::size;
+
+        explicit arguments_vector(std::vector<std::tuple<Args...>> &&other) : std::vector<std::tuple<Args...>>(other) {}
+
+        template<typename Serializer, typename Output>
+        inline void serialize(Serializer s, Output &out) const {
+            cluster::write(s, out, (std::vector<std::tuple<Args...>>) *this);
+        }
+
+        template<typename Serializer, typename Input>
+        static inline arguments_vector<std::tuple<Args...>> deserialize(Serializer s, Input &in) {
+            return arguments_vector<std::tuple<Args...>>(
+                    cluster::read(s, in, seastar::rpc::type<std::vector<std::tuple<Args...>>>{}));
+        }
     };
 
     // Template specialization for empty argument pack
@@ -76,6 +90,9 @@ namespace ultramarine::impl {
 
         arguments_vector<std::tuple<>>() : range(constant_value_iterator(0), constant_value_iterator(0)) {}
 
+        arguments_vector<std::tuple<>>(std::size_t size) :
+                range(constant_value_iterator(0), constant_value_iterator(size)) {}
+
         arguments_vector(arguments_vector const &) = default;
 
         arguments_vector(arguments_vector &&) = default;
@@ -90,5 +107,16 @@ namespace ultramarine::impl {
         auto end() const { return range.end(); }
 
         auto size() const { return range.end() - range.begin(); }
+
+        template<typename Serializer, typename Output>
+        inline void serialize(Serializer s, Output &out) const {
+            cluster::write_arithmetic_type(out, uint32_t(size()));
+        }
+
+        template<typename Serializer, typename Input>
+        static inline arguments_vector<std::tuple<>> deserialize(Serializer s, Input &in) {
+            auto size = cluster::read_arithmetic_type<uint32_t>(in);
+            return arguments_vector<std::tuple<>>(size);
+        }
     };
 }

@@ -70,6 +70,9 @@ namespace ultramarine::cluster {
     template<typename Output>
     inline static void write(serializer, Output &output, double v) { return write_arithmetic_type(output, v); }
 
+    template<typename Output>
+    inline static void write(serializer, Output &output, bool v) { return write_arithmetic_type(output, (uint8_t)v); }
+
     template<typename Input>
     inline static int32_t read(serializer, Input &input, seastar::rpc::type<int32_t>) {
         return read_arithmetic_type<int32_t>(input);
@@ -93,15 +96,18 @@ namespace ultramarine::cluster {
         return read_arithmetic_type<double>(input);
     }
 
+    template<typename Input>
+    inline static bool read(serializer, Input &input, seastar::rpc::type<bool>) {
+        return (bool)read_arithmetic_type<uint8_t >(input);
+    }
+
+    // BUILT-IN TYPES
+
     template<typename Output>
     inline static void write(serializer, Output &out, const std::string &v) {
         write_arithmetic_type(out, uint32_t(v.size()));
         out.write(v.c_str(), v.size());
     }
-
-
-    // BUILT-IN TYPES
-
 
     template<typename Input>
     inline static std::string read(serializer, Input &in, seastar::rpc::type<std::string>) {
@@ -111,43 +117,43 @@ namespace ultramarine::cluster {
         return ret;
     }
 
-    template <typename Output>
-    inline void write(serializer, Output& out, const seastar::sstring& v) {
+    template<typename Output>
+    inline void write(serializer, Output &out, const seastar::sstring &v) {
         write_arithmetic_type(out, uint32_t(v.size()));
         out.write(v.c_str(), v.size());
     }
 
-    template <typename Input>
-    inline seastar::sstring read(serializer, Input& in, seastar::rpc::type<seastar::sstring>) {
+    template<typename Input>
+    inline seastar::sstring read(serializer, Input &in, seastar::rpc::type<seastar::sstring>) {
         auto size = read_arithmetic_type<uint32_t>(in);
         seastar::sstring ret(seastar::sstring::initialized_later(), size);
         in.read(ret.begin(), size);
         return ret;
     }
 
-    template <typename Output>
-    inline void write(serializer s, Output& out, const seastar::socket_address& v) {
+    template<typename Output>
+    inline void write(serializer s, Output &out, const seastar::socket_address &v) {
         write_arithmetic_type(out, uint32_t(v.addr().as_ipv4_address().ip.raw));
-        write_arithmetic_type(out, uint16_t (v.port()));
+        write_arithmetic_type(out, uint16_t(v.port()));
     }
 
-    template <typename Input>
-    inline seastar::socket_address read(serializer s, Input& in, seastar::rpc::type<seastar::socket_address>) {
+    template<typename Input>
+    inline seastar::socket_address read(serializer s, Input &in, seastar::rpc::type<seastar::socket_address>) {
         auto endpoint = read_arithmetic_type<uint32_t>(in);
-        auto port = read_arithmetic_type<uint16_t >(in);
+        auto port = read_arithmetic_type<uint16_t>(in);
         return seastar::socket_address(endpoint, port);
     }
 
-    template <typename Output, typename T>
-    inline void write(serializer s, Output& out, const std::vector<T>& v) {
+    template<typename Output, typename T>
+    inline void write(serializer s, Output &out, const std::vector<T> &v) {
         write_arithmetic_type(out, uint32_t(v.size()));
         for (const auto &item : v) {
             write(s, out, item);
         }
     }
 
-    template <typename Input, typename T>
-    inline std::vector<T> read(serializer s, Input& in, seastar::rpc::type<std::vector<T>>) {
+    template<typename Input, typename T>
+    inline std::vector<T> read(serializer s, Input &in, seastar::rpc::type<std::vector<T>>) {
         auto size = read_arithmetic_type<uint32_t>(in);
         std::vector<T> ret;
         for (int j = 0; j < size; ++j) {
@@ -156,16 +162,29 @@ namespace ultramarine::cluster {
         return ret;
     }
 
+    template<typename Output, typename ...Args>
+    inline void write(serializer s, Output &out, const std::tuple<Args...> &v) {
+        std::apply([&](const auto &... e) {
+            ([&](auto const &element) { write(s, out, element); }(e), ...);
+        }, v);
+    }
+
+    template<typename Input, typename ...Args>
+    inline std::tuple<Args...> read(serializer s, Input &in, seastar::rpc::type<std::tuple<Args...>>) {
+        return std::make_tuple((read(s, in, seastar::rpc::type<Args>{}))...);
+    }
+
     // CLASS USER-PROVIDED
 
     //Fallback on object member
-    template <typename Output, typename T>
-    inline void write(serializer s, Output& out, const T& v) {
+    template<typename Output, typename T>
+    inline void write(serializer s, Output &out, const T &v) {
         v.serialize(s, out);
     }
+
     //Fallback on object member
-    template <typename Input, typename T>
-    inline T read(serializer s, Input& in, seastar::rpc::type<T>) {
+    template<typename Input, typename T>
+    inline T read(serializer s, Input &in, seastar::rpc::type<T>) {
         return T::deserialize(s, in);
     }
 }

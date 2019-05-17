@@ -28,6 +28,7 @@
 #include <functional>
 #include <boost/noncopyable.hpp>
 #include <ultramarine/actor_ref.hpp>
+#include <ultramarine/impl/arguments_vector.hpp>
 #include "message_serializer.hpp"
 
 namespace ultramarine::cluster::impl {
@@ -39,7 +40,7 @@ namespace ultramarine::cluster::impl {
     };
 
     inline auto &message_handler_registry() {
-        static std::unordered_map<uint32_t, std::function<void(rpc_proto *)>> init_handlers = {};
+        static std::unordered_map<uint32_t, std::function<void(rpc_proto * )>> init_handlers = {};
         return init_handlers;
     }
 
@@ -49,6 +50,14 @@ namespace ultramarine::cluster::impl {
         auto reg = [fptr, message](auto *rpc) {
             rpc->register_handler(message.value, [message](ActorKey key, Args... args) {
                 return ultramarine::get<Actor>(std::forward<ActorKey>(key)).tell(message, std::forward<Args>(args)...);
+            });
+
+            // packed version
+            uint32_t packed_message_id = message.value | (1U << 0U);
+            using ArgPack = ultramarine::impl::arguments_vector<std::tuple<Args...>>;
+            rpc->register_handler(packed_message_id, [message](ActorKey key, ArgPack args) {
+                auto actor = ultramarine::get<Actor>(std::forward<ActorKey>(key));
+                return actor.tell_packed(message, std::forward<ArgPack>(args));
             });
         };
         message_handler_registry().insert({message.value, reg});
@@ -60,6 +69,14 @@ namespace ultramarine::cluster::impl {
         auto reg = [fptr, message](auto *rpc) {
             rpc->register_handler(message.value, [message](ActorKey key, Args... args) {
                 return ultramarine::get<Actor>(std::forward<ActorKey>(key)).tell(message, std::forward<Args>(args)...);
+            });
+
+            // packed version
+            uint32_t packed_message_id = message.value | (1U << 0U);
+            using ArgPack = ultramarine::impl::arguments_vector<std::tuple<Args...>>;
+            rpc->register_handler(packed_message_id, [message](ActorKey key, ArgPack args) {
+                auto actor = ultramarine::get<Actor>(std::forward<ActorKey>(key));
+                return actor.tell_packed(message, std::forward<ArgPack>(args));
             });
         };
         message_handler_registry().insert({message.value, reg});

@@ -36,36 +36,55 @@ namespace ultramarine::cluster::impl {
 
     template<typename Actor>
     struct directory {
-        [[nodiscard]] static constexpr node const * hold_remote_peer(ActorKey<Actor> const& key, std::size_t hash) {
+        [[nodiscard]] static constexpr node const *hold_remote_peer(ActorKey<Actor> const &key, std::size_t hash) {
             return membership::service.local().node_for_key(hash);
         }
 
-        template<typename Ret, typename Class, typename ...Args>
-        static constexpr auto
-        dispatch_message(node const &n, ActorKey<Actor> const& key, Ret (Class::*fptr)(Args...) const, uint32_t id) {
-            return n.rpc->make_client<Ret(ActorKey<Actor>, Args...)>(id)(*n.client, key);
-        }
-
         template<typename Ret, typename Class, typename ...FArgs, typename ...Args>
         static constexpr auto
-        dispatch_message(node const &n, ActorKey<Actor> const& key, Ret (Class::*fptr)(FArgs...) const, uint32_t id,
+        dispatch_message(node const &n, ActorKey<Actor> const &key, Ret (Class::*fptr)(FArgs...) const, uint32_t id,
                          Args &&... args) {
             return n.rpc->make_client<Ret(ActorKey<Actor>, FArgs...)>(id)(*n.client, key, std::forward<Args>(args) ...);
         }
 
-        template<typename Ret, typename Class, typename ...Args>
-        static constexpr auto
-        dispatch_message(node const &n, ActorKey<Actor> const& key, Ret (Class::*fptr)(Args...), uint32_t id) {
-            return n.rpc->make_client<Ret(ActorKey<Actor>, Args...)>(id)(*n.client, key);
-        }
-
         template<typename Ret, typename Class, typename ...FArgs, typename ...Args>
         static constexpr auto
-        dispatch_message(node const &n, ActorKey<Actor> const& key, Ret (Class::*fptr)(FArgs...), uint32_t id,
+        dispatch_message(node const &n, ActorKey<Actor> const &key, Ret (Class::*fptr)(FArgs...), uint32_t id,
                          Args &&... args) {
             return n.rpc->make_client<Ret(ActorKey<Actor>, FArgs...)>(id)(*n.client, key, std::forward<Args>(args) ...);
+        }
+
+        template<typename Ret, typename Class, typename ...FArgs, typename PackedArgs>
+        static constexpr auto
+        dispatch_packed_message(node const &n, ActorKey<Actor> const &key, Ret (Class::*fptr)(FArgs...) const,
+                                uint32_t id, PackedArgs &&args) {
+            using FutReturn = seastar::futurize_t<std::result_of_t<decltype(fptr)(Actor, FArgs...)>>;
+            using ReturnType = typename ultramarine::impl::get0_return_type<typename FutReturn::value_type>::type;
+            if constexpr (std::is_same_v<ReturnType, void>) {
+                auto client = n.rpc->make_client<seastar::future<>(ActorKey<Actor>, PackedArgs)>(id | (1U << 0U));
+                return client(*n.client, key, std::forward<PackedArgs>(args));
+            } else {
+                auto client = n.rpc->make_client<seastar::future<std::vector<ReturnType>>(ActorKey<Actor>, PackedArgs)>(
+                        id | (1U << 0U));
+                return client(*n.client, key, std::forward<PackedArgs>(args));
+            }
+
+        }
+
+        template<typename Ret, typename Class, typename ...FArgs, typename PackedArgs>
+        static constexpr auto
+        dispatch_packed_message(node const &n, ActorKey<Actor> const &key, Ret (Class::*fptr)(FArgs...), uint32_t id,
+                                PackedArgs &&args) {
+            using FutReturn = seastar::futurize_t<std::result_of_t<decltype(fptr)(Actor, FArgs...)>>;
+            using ReturnType = typename ultramarine::impl::get0_return_type<typename FutReturn::value_type>::type;
+            if constexpr (std::is_same_v<ReturnType, void>) {
+                auto client = n.rpc->make_client<seastar::future<>(ActorKey<Actor>, PackedArgs)>(id | (1U << 0U));
+                return client(*n.client, key, std::forward<PackedArgs>(args));
+            } else {
+                auto client = n.rpc->make_client<seastar::future<std::vector<ReturnType>>(ActorKey<Actor>, PackedArgs)>(
+                        id | (1U << 0U));
+                return client(*n.client, key, std::forward<PackedArgs>(args));
+            }
         }
     };
-
-
 }

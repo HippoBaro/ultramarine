@@ -48,16 +48,17 @@ namespace ultramarine::cluster::impl {
             return typename Actor::internal::template interface<remote_actor_ref<Actor>>{*this};
         }
 
-        template<typename Handler>
-        inline constexpr auto tell(Handler message) const {
-            return directory<Actor>::dispatch_message(*loc, key, ultramarine::impl::vtable<Actor>::table[message],
-                                                      message.value);
-        }
-
         template<typename Handler, typename ...Args>
         inline constexpr auto tell(Handler message, Args &&... args) const {
             return directory<Actor>::dispatch_message(*loc, key, ultramarine::impl::vtable<Actor>::table[message],
                                                       message.value, std::forward<Args>(args) ...);
+        }
+
+        template<typename Handler, typename PackedArgs>
+        constexpr auto inline tell_packed(Handler message, PackedArgs &&args) const {
+            return directory<Actor>::dispatch_packed_message(*loc, key,
+                                                             ultramarine::impl::vtable<Actor>::table[message],
+                                                             message.value, std::forward<PackedArgs>(args));
         }
     };
 }
