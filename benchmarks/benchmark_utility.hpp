@@ -26,8 +26,11 @@
 
 #include <chrono>
 #include <numeric>
+#include <boost/algorithm/string.hpp>
 #include <seastar/core/app-template.hh>
 #include <seastar/core/print.hh>
+#include <ultramarine/cluster/cluster.hpp>
+#include <seastar/core/sleep.hh>
 
 #define ULTRAMARINE_BENCH(name) {#name, name}
 
@@ -79,9 +82,56 @@ namespace ultramarine::benchmark {
         });
     }
 
+#ifdef CLUSTERED_BENCHMARK
     int run(int ac, char **av, benchmark_list &&benchs, int run = 1000) {
         seastar::app_template app;
+        namespace bpo = boost::program_options;
+        app.add_options()
+                ("local,l", bpo::value<std::string>(), "Local node address in format 'ip4:port'")
+                ("minimum-peers,m", bpo::value<int>()->default_value(1), "Wait for the cluster to be least this large")
+                ("initiator", bpo::value<bool>()->default_value(false), "Initiate benchmark")
+                ("peers", bpo::value<std::vector<std::string>>()->multitoken(), "List of peers in format 'ip4:port'");
 
+        return app.run(ac, av, [benchs = std::move(benchs), run, &app] {
+            auto &&config = app.configuration();
+
+            if (!config.count("local")) {
+                seastar::print("Missing --local argument\n");
+            }
+
+            auto str_to_socketaddress = [] (std::string const& str) {
+                std::vector<std::string> strs;
+                boost::split(strs, str, boost::is_any_of(":"));
+                return seastar::socket_address(seastar::ipv4_addr(strs[0], strtoul(strs[1].c_str(), nullptr, 0)));
+            };
+
+            std::vector<seastar::socket_address> peers;
+            seastar::socket_address local;
+            if (config.count("peers")) {
+                for (const std::string &item : config["peers"].as<std::vector<std::string>>()) {
+                    peers.emplace_back(str_to_socketaddress(item));
+                }
+            }
+            local = str_to_socketaddress(config["local"].as<std::string>());
+
+            return seastar::do_with(std::move(benchs), std::vector<std::chrono::microseconds::rep>(),
+                    [run, &config, local, peers] (auto &benchs, auto &vec) mutable {
+                return ultramarine::cluster::with_cluster(std::move(local),
+                        std::move(peers), config["minimum-peers"].as<int>(), [run, &benchs, &config]() {
+                            if (config["initiator"].as<bool>()) {
+                                return seastar::do_for_each(benchs, [run](auto &bench) {
+                                    return run_one(bench, run);
+                                });
+                            }
+                            return seastar::sleep(std::chrono::hours(10));
+                        });
+            });
+        });
+    }
+#else
+
+    int run(int ac, char **av, benchmark_list &&benchs, int run = 1000) {
+        seastar::app_template app;
         return app.run(ac, av, [benchs = std::move(benchs), run] {
             return seastar::do_with(std::move(benchs), std::vector<std::chrono::microseconds::rep>(), [run]
                     (auto &benchs, auto &vec) {
@@ -91,4 +141,6 @@ namespace ultramarine::benchmark {
             });
         });
     }
+
+#endif
 }
