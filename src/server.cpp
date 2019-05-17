@@ -46,8 +46,11 @@ namespace ultramarine::cluster::impl {
             return membership::service.invoke_on_all([req = std::move(req)](membership &service) mutable {
                 return service.add_candidates(std::move(req));
             }).then([] {
-                return handshake_response({membership::service.local().members().begin(),
-                                           membership::service.local().members().begin()});
+                std::vector<seastar::socket_address> vec;
+                for (const auto &member : membership::service.local().members()) {
+                    vec.emplace_back(member.second);
+                }
+                return handshake_response(std::move(vec));
             });
         });
         rpc = std::make_unique<rpc_proto::server>(proto, local);

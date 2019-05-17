@@ -37,13 +37,15 @@ namespace ultramarine::cluster::impl {
         seastar::queue<seastar::socket_address> candidates;
         seastar::future<> candidate_connection_job;
         seastar::gate candidate_connection_gate;
-        std::unordered_set<node> nodes;
+        std::unordered_map<std::string, node> nodes;
         std::unordered_set<seastar::socket_address> connecting_nodes;
         ring_ptr ring;
         seastar::socket_address local_node;
         rpc_proto proto{serializer{}};
 
     public:
+        seastar::condition_variable joined_cv;
+
         explicit membership(seastar::socket_address const &local);
 
         seastar::future<> try_add_peer(seastar::socket_address endpoint);
@@ -52,7 +54,7 @@ namespace ultramarine::cluster::impl {
 
         bool is_connected_to_cluster() const;
 
-        std::unordered_set<node> const& members() const;
+        std::unordered_map<std::string, node> const& members() const;
 
         seastar::future<> stop();
 

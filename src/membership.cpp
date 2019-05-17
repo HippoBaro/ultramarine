@@ -33,18 +33,14 @@ extern "C" {
 
 namespace ultramarine::cluster::impl {
 
-    static inline std::pair<char *, std::size_t> make_peer_string_identity(seastar::socket_address const &endpoint) {
+    static inline std::string_view make_peer_string_identity(seastar::socket_address const &endpoint) {
         static thread_local char identity[21];
 
         auto ip = endpoint.addr().as_ipv4_address().ip.raw;
         auto res = fmt::format_to_n(identity, sizeof(identity), "{}.{}.{}.{}:{}", (ip >> 24U) & 0xFFU,
                                     (ip >> 16U) & 0xFFU, (ip >> 8U) & 0xFFU, ip & 0xFFU, endpoint.port());
         *res.out = '\0';
-        return {identity, res.size};
-    }
-
-    static inline std::pair<uint32_t, uint16_t> make_peer_identity(seastar::socket_address const &endpoint) {
-        return std::make_pair(endpoint.addr().as_ipv4_address().ip.raw, endpoint.port());
+        return std::string_view(identity, res.size);
     }
 
     membership::membership(seastar::socket_address const &local) :
@@ -58,15 +54,18 @@ namespace ultramarine::cluster::impl {
             seastar::print("%u: RPC -> %s\n", seastar::engine().cpu_id(), log);
         });
 
-        auto identity = make_peer_identity(local);
-        hash_ring_add_node(ring.get(), (uint8_t *) &identity, sizeof(identity));
+        auto identity = make_peer_string_identity(local);
+        hash_ring_add_node(ring.get(), (uint8_t *) identity.data(), identity.size());
         candidate_connection_job = contact_candidates();
     }
 
     seastar::future<> membership::try_add_peer(seastar::socket_address endpoint) {
+        auto id = make_peer_string_identity(endpoint);
         // If the endpoint is already part of the cluster or if the endpoint is already being contacted
-        if (nodes.count(node(endpoint.addr().as_ipv4_address().ip.raw, endpoint.port())) > 0 ||
+        if (nodes.count(std::string(make_peer_string_identity(endpoint))) > 0 ||
             connecting_nodes.count(endpoint) > 0) {
+            seastar::print("%u: Node %s is already connected to or a connection is in progress\n",
+                           seastar::engine().cpu_id(), id);
             return seastar::make_ready_future();
         }
         connecting_nodes.insert(endpoint);
@@ -74,23 +73,24 @@ namespace ultramarine::cluster::impl {
             return seastar::do_with(std::move(client), [this](seastar::lw_shared_ptr<rpc_proto::client> &client) {
                 return handshake(client).then([this, &client](handshake_response response) {
                     auto id = make_peer_string_identity(client->peer_address());
-                    auto identity = make_peer_identity(client->peer_address());
-                    nodes.emplace(node(&proto, std::move(client)));
-                    hash_ring_add_node(ring.get(), (uint8_t *) &identity, sizeof(identity));
-                    seastar::print("%u: Added peer %s to hash-ring\n", seastar::engine().cpu_id(), id.first);
+                    nodes.emplace(std::make_pair(std::string(id), node(&proto, std::move(client))));
+                    hash_ring_add_node(ring.get(), (uint8_t *) id.data(), id.size());
+                    seastar::print("%u: Added peer %s to hash-ring\n", seastar::engine().cpu_id(), id);
+                    joined_cv.broadcast();
                     return seastar::make_ready_future();
                 });
             });
-        }).handle_exception([endpoint](std::exception_ptr ex) { }).finally([this, endpoint] {
+        }).handle_exception([endpoint](std::exception_ptr ex) {}).finally([this, endpoint] {
             connecting_nodes.erase(endpoint);
         });
     }
 
     node const *membership::node_for_key(std::size_t key) const {
+        if (nodes.empty()) { return nullptr; }
         auto *ptr = hash_ring_find_node(ring.get(), (uint8_t *) &key, sizeof(key));
-        auto pair = (std::pair<uint32_t, uint16_t> *) ptr->name;
-        if (*pair != make_peer_identity(local_node)) {
-            return &(*nodes.find(node(pair->first, pair->second)));
+        auto view = std::string((char *) ptr->name, ptr->nameLen);
+        if (view != make_peer_string_identity(local_node)) {
+            return &(nodes.at(view));
         }
         return nullptr;
     }
@@ -105,7 +105,7 @@ namespace ultramarine::cluster::impl {
                     })
                     .then([this] {
                         return seastar::parallel_for_each(nodes, [this](auto &peer) {
-                            return disconnect(peer);
+                            return disconnect(peer.second);
                         });
                     });
         });
@@ -119,7 +119,7 @@ namespace ultramarine::cluster::impl {
         return !nodes.empty();
     }
 
-    std::unordered_set<node> const &membership::members() const {
+    std::unordered_map<std::string, node> const &membership::members() const {
         return nodes;
     }
 
@@ -127,7 +127,7 @@ namespace ultramarine::cluster::impl {
         return seastar::do_with(seastar::make_lw_shared<rpc_proto::client>(proto, to), [](auto &client) {
             return client->await_connection().then([&client] {
                 auto identity = make_peer_string_identity(client->peer_address());
-                seastar::print("%u: Connected to %s\n", seastar::engine().cpu_id(), identity.first);
+                seastar::print("%u: Connected to %s\n", seastar::engine().cpu_id(), identity);
                 return client;
             });
         });
@@ -136,10 +136,13 @@ namespace ultramarine::cluster::impl {
     seastar::future<handshake_response>
     membership::handshake(seastar::lw_shared_ptr<rpc_proto::client> &with) {
         auto identity = make_peer_string_identity(with->peer_address());
-        seastar::print("%u: Performing handshake with %s\n", seastar::engine().cpu_id(), identity.first);
+        seastar::print("%u: Performing handshake with %s\n", seastar::engine().cpu_id(), identity);
         auto hs = proto.make_client<handshake_response(handshake_request)>(0);
-        return hs(*with,
-                  handshake_request(std::vector<seastar::socket_address>(nodes.begin(), nodes.end()), local_node));
+        std::vector<seastar::socket_address> vec;
+        for (const auto &member : nodes) {
+            vec.emplace_back(member.second);
+        }
+        return hs(*with, handshake_request(std::move(vec), local_node));
     }
 
     seastar::future<> membership::disconnect(node const &n) const {
@@ -152,10 +155,8 @@ namespace ultramarine::cluster::impl {
         return seastar::repeat([this] {
             return candidates.pop_eventually().then([this](seastar::socket_address addr) {
                 return seastar::with_gate(candidate_connection_gate, [this, addr] {
-                    return candidates.pop_eventually().then([this](seastar::socket_address addr) {
-                        return try_add_peer(addr).then([] {
-                            return seastar::stop_iteration::no;
-                        });
+                    return try_add_peer(addr).then([] {
+                        return seastar::stop_iteration::no;
                     });
                 });
             }).handle_exception([](std::exception_ptr ex) {

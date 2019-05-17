@@ -35,19 +35,34 @@ namespace ultramarine::cluster {
 
     template<typename Func>
     seastar::future<>
+    with_cluster(seastar::socket_address const &local, std::vector<seastar::socket_address> &&peers,
+                 std::size_t minimum_connected_peers, Func &&func) {
+        return with_cluster_impl(local, std::move(peers)).then(
+                [func = std::forward<Func>(func), minimum_connected_peers]() mutable {
+                    return impl::membership::service.local().joined_cv.wait([minimum_connected_peers] {
+                        return impl::membership::service.local().members().size() >= minimum_connected_peers;
+                    }).then([func = std::forward<Func>(func)] {
+                        seastar::print("%d: Calling user code\n", seastar::engine().cpu_id());
+                        return func();
+                    });
+                });
+    }
+
+    template<typename Func>
+    seastar::future<>
     with_cluster(seastar::socket_address const &local, std::vector<seastar::socket_address> &&peers, Func &&func) {
-        return with_cluster_impl(local, std::move(peers)).then([func = std::forward<Func>(func)] {
-            seastar::print("%d: Calling user code\n", seastar::engine().cpu_id());
-            return func();
-        });
+        return with_cluster(local, std::move(peers), 0, std::forward<Func>(func));
+    }
+
+    template<typename Func>
+    seastar::future<>
+    with_cluster(seastar::socket_address const &local, std::size_t minimum_connected_peers, Func &&func) {
+        return with_cluster(local, {}, minimum_connected_peers, std::forward<Func>(func));
     }
 
     template<typename Func>
     seastar::future<>
     with_cluster(seastar::socket_address const &local, Func &&func) {
-        return with_cluster_impl(local, {}).then([func = std::forward<Func>(func)] {
-            seastar::print("%d: Calling user code\n", seastar::engine().cpu_id());
-            return func();
-        });
+        return with_cluster(local, {}, 0, std::forward<Func>(func));
     }
 }
