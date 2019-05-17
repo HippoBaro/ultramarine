@@ -120,7 +120,7 @@ namespace ultramarine::benchmark {
                         std::move(peers), config["minimum-peers"].as<int>(), [run, &benchs, &config]() {
                             if (config["initiator"].as<bool>()) {
                                 return seastar::do_for_each(benchs, [run](auto &bench) {
-                                    return run_one(bench, run);
+                                    return run_one(bench, 1);
                                 });
                             }
                             return seastar::sleep(std::chrono::hours(10));
