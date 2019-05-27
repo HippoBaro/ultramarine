@@ -64,8 +64,6 @@ namespace ultramarine::cluster::impl {
         // If the endpoint is already part of the cluster or if the endpoint is already being contacted
         if (nodes.count(std::string(make_peer_string_identity(endpoint))) > 0 ||
             connecting_nodes.count(endpoint) > 0) {
-            seastar::print("%u: Node %s is already connected to or a connection is in progress\n",
-                           seastar::engine().cpu_id(), id);
             return seastar::make_ready_future();
         }
         connecting_nodes.insert(endpoint);

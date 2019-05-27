@@ -44,14 +44,26 @@ namespace ultramarine::cluster::impl {
         static constexpr auto
         dispatch_message(node const &n, ActorKey<Actor> const &key, Ret (Class::*fptr)(FArgs...) const, uint32_t id,
                          Args &&... args) {
-            return n.rpc->make_client<Ret(ActorKey<Actor>, FArgs...)>(id)(*n.client, key, std::forward<Args>(args) ...);
+            if constexpr (std::is_same_v<Ret, void>) {
+                using Sig = seastar::rpc::no_wait_type(ActorKey<Actor>, FArgs...);
+                return n.rpc->make_client<Sig>(id)(*n.client, key, std::forward<Args>(args) ...);
+            } else {
+                using Sig = Ret(ActorKey<Actor>, FArgs...);
+                return n.rpc->make_client<Sig>(id)(*n.client, key, std::forward<Args>(args) ...);
+            }
         }
 
         template<typename Ret, typename Class, typename ...FArgs, typename ...Args>
         static constexpr auto
         dispatch_message(node const &n, ActorKey<Actor> const &key, Ret (Class::*fptr)(FArgs...), uint32_t id,
                          Args &&... args) {
-            return n.rpc->make_client<Ret(ActorKey<Actor>, FArgs...)>(id)(*n.client, key, std::forward<Args>(args) ...);
+            if constexpr (std::is_same_v<Ret, void>) {
+                using Sig = seastar::rpc::no_wait_type(ActorKey<Actor>, FArgs...);
+                return n.rpc->make_client<Sig>(id)(*n.client, key, std::forward<Args>(args) ...);
+            } else {
+                using Sig = Ret(ActorKey<Actor>, FArgs...);
+                return n.rpc->make_client<Sig>(id)(*n.client, key, std::forward<Args>(args) ...);
+            }
         }
 
         template<typename Ret, typename Class, typename ...FArgs, typename PackedArgs>
@@ -61,14 +73,12 @@ namespace ultramarine::cluster::impl {
             using FutReturn = seastar::futurize_t<std::result_of_t<decltype(fptr)(Actor, FArgs...)>>;
             using ReturnType = typename ultramarine::impl::get0_return_type<typename FutReturn::value_type>::type;
             if constexpr (std::is_same_v<ReturnType, void>) {
-                auto client = n.rpc->make_client<seastar::future<>(ActorKey<Actor>, PackedArgs)>(id | (1U << 0U));
-                return client(*n.client, key, std::forward<PackedArgs>(args));
+                using Sig = seastar::future<>(ActorKey<Actor>, PackedArgs);
+                return n.rpc->make_client<Sig>(id | (1U << 0U))(*n.client, key, std::forward<PackedArgs>(args));
             } else {
-                auto client = n.rpc->make_client<seastar::future<std::vector<ReturnType>>(ActorKey<Actor>, PackedArgs)>(
-                        id | (1U << 0U));
-                return client(*n.client, key, std::forward<PackedArgs>(args));
+                using Sig = seastar::future<std::vector<ReturnType>>(ActorKey<Actor>, PackedArgs);
+                return n.rpc->make_client<Sig>(id | (1U << 0U))(*n.client, key, std::forward<PackedArgs>(args));
             }
-
         }
 
         template<typename Ret, typename Class, typename ...FArgs, typename PackedArgs>
@@ -78,12 +88,11 @@ namespace ultramarine::cluster::impl {
             using FutReturn = seastar::futurize_t<std::result_of_t<decltype(fptr)(Actor, FArgs...)>>;
             using ReturnType = typename ultramarine::impl::get0_return_type<typename FutReturn::value_type>::type;
             if constexpr (std::is_same_v<ReturnType, void>) {
-                auto client = n.rpc->make_client<seastar::future<>(ActorKey<Actor>, PackedArgs)>(id | (1U << 0U));
-                return client(*n.client, key, std::forward<PackedArgs>(args));
+                using Sig = seastar::future<>(ActorKey<Actor>, PackedArgs);
+                return n.rpc->make_client<Sig>(id | (1U << 0U))(*n.client, key, std::forward<PackedArgs>(args));
             } else {
-                auto client = n.rpc->make_client<seastar::future<std::vector<ReturnType>>(ActorKey<Actor>, PackedArgs)>(
-                        id | (1U << 0U));
-                return client(*n.client, key, std::forward<PackedArgs>(args));
+                using Sig = seastar::future<std::vector<ReturnType>>(ActorKey<Actor>, PackedArgs);
+                return n.rpc->make_client<Sig>(id | (1U << 0U))(*n.client, key, std::forward<PackedArgs>(args));
             }
         }
     };
