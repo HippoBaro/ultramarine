@@ -51,7 +51,7 @@ namespace ultramarine::cluster::impl {
         }
 
         proto.set_logger([](seastar::sstring log) {
-            seastar::print("%u: RPC -> %s\n", seastar::engine().cpu_id(), log);
+            seastar::print("\033[93m%u: RPC -> %s\033[0m\n", seastar::engine().cpu_id(), log);
         });
 
         auto identity = make_peer_string_identity(local);
@@ -73,7 +73,7 @@ namespace ultramarine::cluster::impl {
                     auto id = make_peer_string_identity(client->peer_address());
                     nodes.emplace(std::make_pair(std::string(id), node(&proto, std::move(client))));
                     hash_ring_add_node(ring.get(), (uint8_t *) id.data(), id.size());
-                    seastar::print("%u: Added peer %s to hash-ring\n", seastar::engine().cpu_id(), id);
+                    seastar::print("\033[94m%u: Added peer %s to hash-ring\033[0m\n", seastar::engine().cpu_id(), id);
                     joined_cv.broadcast();
                     return seastar::make_ready_future();
                 });
@@ -124,8 +124,6 @@ namespace ultramarine::cluster::impl {
     seastar::future<seastar::lw_shared_ptr<rpc_proto::client>> membership::connect(seastar::socket_address const &to) {
         return seastar::do_with(seastar::make_lw_shared<rpc_proto::client>(proto, to), [](auto &client) {
             return client->await_connection().then([&client] {
-                auto identity = make_peer_string_identity(client->peer_address());
-                seastar::print("%u: Connected to %s\n", seastar::engine().cpu_id(), identity);
                 return client;
             });
         });
