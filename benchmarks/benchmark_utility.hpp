@@ -74,9 +74,18 @@ namespace ultramarine::benchmark {
             }).then([&vec, &bench, bench_start] {
                 std::sort(std::begin(vec), std::end(vec));
                 auto sum = std::accumulate(std::begin(vec), std::end(vec), 0UL);
-                seastar::print("%s: %lu us (min: %lu us -- 99.9p: %lu us -- std: %lu us) | Total: %lu ms\n",
-                               std::get<0>(bench), sum / vec.size(),
-                               *std::begin(vec), *(std::end(vec) - 1), stDev(vec),
+                seastar::print("%s:"
+                               "\n\titerations   : %d"
+                               "\n\tavr          : %lu us (%lu ms)"
+                               "\n\tmin          : %lu us (%lu ms)"
+                               "\n\t99.9p        : %lu us (%lu ms)"
+                               "\n\tstd          : %lu us (%lu ms)"
+                               "\n\tTotal elapsed: %lu ms\n",
+                               std::get<0>(bench), vec.size(),
+                               sum / vec.size(), sum / vec.size() / 1000, // avr
+                               *std::begin(vec), *std::begin(vec) / 1000, // min
+                               *(std::end(vec) - 1), *(std::end(vec) - 1) / 1000, // max
+                               stDev(vec), stDev(vec) / 1000,
                                duration_cast<milliseconds>(high_resolution_clock::now() - bench_start).count());
             });
         });
@@ -120,7 +129,7 @@ namespace ultramarine::benchmark {
                         std::move(peers), config["minimum-peers"].as<int>(), [run, &benchs, &config]() {
                             if (config["initiator"].as<bool>()) {
                                 return seastar::do_for_each(benchs, [run](auto &bench) {
-                                    return run_one(bench, 1);
+                                    return run_one(bench, run);
                                 });
                             }
                             return seastar::sleep(std::chrono::hours(10));
